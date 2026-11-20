@@ -4,12 +4,12 @@ export const PROMPTS_PER_DAY = 7;
 export const EPOCH = Date.UTC(2026, 10, 19); // Dive #1 = 2026-11-19 (America/New_York)
 const TZ = "America/New_York";
 
-// Tier ladder. "rank" orders the rarity tiers (technically_correct sits outside it).
+// Tier ladder. "rank" orders the rarity tiers (honors_kid sits outside it).
 export const TIERS = {
   waitlisted:          { label: "Waitlisted",            points: 0 },
   missed:              { label: "Missed the Green Line", points: 0 },
   tour_group:          { label: "Tour Group",            points: 10,  rank: 0 },
-  technically_correct: { label: "Technically Correct",   points: 15 },
+  honors_kid:          { label: "Honors Kid",            points: 15 },
   first_year:          { label: "First-Year",            points: 30,  rank: 1 },
   coop_veteran:        { label: "Co-op Veteran",         points: 60,  rank: 2 },
   fifth_year:          { label: "Fifth-Year Senior",     points: 85,  rank: 3 },
@@ -88,7 +88,8 @@ export function frequencyTier(count, total) {
   return "huskrillion";
 }
 
+// One in a Huskrillion is reserved for the designated gem, so blending tops out at Fifth-Year.
 export function blendTiers(aiTier, freqTier) {
   const a = TIERS[aiTier].rank, f = TIERS[freqTier].rank;
-  return RANKED[Math.round((a + f) / 2)];
+  return RANKED[Math.min(3, Math.round((a + f) / 2))];
 }
