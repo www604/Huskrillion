@@ -38,13 +38,13 @@
   .icon { width: 42px; height: 42px; background: rgba(10, 6, 12, .75); color: var(--text); border: 0; box-shadow: 0 0 0 2px #06030a, 0 0 0 4px rgba(255, 255, 255, .25); font-size: 22px; cursor: pointer; display: grid; place-items: center; }
   .icon:hover { box-shadow: 0 0 0 2px #06030a, 0 0 0 4px var(--neon); }
 
-  #title { display: flex; flex-direction: column; align-items: center; }
+  #title { display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
   .t-top { margin-top: max(8vh, 70px); text-align: center; padding: 0 16px; }
   .logo { font-family: "Press Start 2P"; font-size: clamp(30px, 7.2vw, 96px); color: #fff; letter-spacing: .04em; text-shadow: -5px 0 0 var(--neon), 5px 0 0 #2a0a14, 0 0 30px rgba(255, 42, 77, .45); margin: 0; animation: glitch 6s steps(1) infinite; }
   @keyframes glitch { 0%, 92%, 100% { transform: none; } 93% { transform: translate(3px, -1px); } 95% { transform: translate(-3px, 1px); } 97% { transform: translate(1px, 0); } }
   .sub { margin-top: 22px; font-size: clamp(22px, 2.6vw, 34px); letter-spacing: .5em; color: #fff; text-shadow: 0 0 12px rgba(255, 42, 77, .8), 2px 2px 0 #3a0a14; }
   .tag { margin-top: 14px; font-size: clamp(17px, 1.7vw, 23px); letter-spacing: .12em; color: #2a1120; text-shadow: 0 1px 0 rgba(255, 255, 255, .4); }
-  .t-bottom { position: absolute; top: calc(58vh + 26px); width: min(640px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 18px; }
+  .t-bottom { position: absolute; top: calc(58vh + 26px); width: min(640px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 18px; padding-bottom: 24px; }
   .howto-toggle { background: none; border: 0; color: var(--muted); font-size: 20px; letter-spacing: .25em; text-transform: uppercase; cursor: pointer; text-align: left; padding: 0; }
   .howto { margin: 0; padding: 14px 18px; list-style: none; background: var(--panel); box-shadow: 0 0 0 2px #06030a, 0 0 0 4px rgba(255, 42, 77, .55); font-size: 21px; letter-spacing: .04em; }
   .howto li { padding: 3px 0; }
@@ -117,7 +117,12 @@
   .loglist .sq { width: 16px; height: 16px; margin-top: 4px; box-shadow: 0 0 0 2px #06030a; }
   .loglist .q { color: var(--muted); font-size: 18px; }
   .loglist .a { font-size: 24px; }
-  .loglist .t { text-align: right; font-size: 18px; letter-spacing: .06em; white-space: nowrap; }
+  .loglist .t { text-align: right; font-size: 18px; letter-spacing: .06em; max-width: 140px; }
+  .loglist .a s { color: var(--muted); }
+  .loglist .g { color: #ff6b84; font-size: 17px; letter-spacing: .06em; margin-top: 2px; }
+  .sqrow { display: flex; gap: 6px; margin: 10px 0; }
+  .sqrow i { width: 26px; height: 26px; box-shadow: 0 0 0 2px #06030a; }
+  @media (max-width: 760px) { #done { padding-top: 112px; } .results { max-height: calc(100vh - 128px); } .loglist li { gap: 8px; } .loglist .t { max-width: 92px; font-size: 16px; } .loglist .a { font-size: 21px; } }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 8px; }
   .stats div { text-align: center; background: rgba(255, 255, 255, .04); padding: 8px 4px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .08); }
   .stats b { display: block; font-family: "Press Start 2P"; font-size: 16px; font-weight: normal; margin-bottom: 6px; }
@@ -160,6 +165,8 @@
     <div class="tag">7 prompts · 25 seconds each · rarer answers sink deeper</div>
   </div>
   <div class="t-bottom">
+    <button class="btn" id="beginBtn">▼ begin descent ▼</button>
+    <div class="t-meta"><span id="metaDive">dive #– · streak 0</span><span id="metaBest"></span></div>
     <button class="howto-toggle" id="howtoToggle" aria-expanded="false">▸ how to play</button>
     <ul class="howto" id="howto" hidden>
       <li>7 prompts a day. same for every husky.</li>
@@ -169,8 +176,6 @@
       <li>every point sinks you 10 metres. 7,000 m is the bottom of the charles.</li>
       <li>one dive per day. no second chances.</li>
     </ul>
-    <button class="btn" id="beginBtn">▼ begin descent ▼</button>
-    <div class="t-meta"><span id="metaDive">dive #– · streak 0</span><span id="metaBest"></span></div>
     <div class="foot">fan-made for huskies. not affiliated with northeastern university. inspired by krillion.</div>
   </div>
 </section>
@@ -260,7 +265,7 @@
     },
   };
   function paintMute() { $("#muteBtn").textContent = muted ? "×" : "♪"; $("#muteBtn").style.opacity = muted ? .6 : 1; }
-  $("#muteBtn").onclick = () => { muted = !muted; store.set("hk:muted", muted); paintMute(); };
+  $("#muteBtn").onclick = () => { muted = !muted; store.set("hk:muted", muted); paintMute(); if (phase === "play" && !judging) $("#ans")?.focus(); };
   paintMute();
 
   // ================= Pixel world =================
@@ -604,7 +609,7 @@
   // ================= Game state =================
   let daily = null, save = null, phase = "loading";
   let deadline = 0, remaining = SECONDS * 1000, timerOn = false, judging = false, lastSecShown = -1;
-  let resetAt = 0;
+  let resetAt = 0, forfeited = null;
   const saveKey = () => `huskrillion:${daily.date}`;
   const persist = () => store.set(saveKey(), save);
   const total = () => save.results.reduce((s, r) => s + (r?.points || 0), 0);
@@ -625,7 +630,7 @@
       const now = !r && i === save.results.length && phase !== "done";
       return `<div class="slot${now ? " now" : ""}"><span>${String(i + 1).padStart(2, "0")}</span><span class="sq" style="${t ? `background:${t.color}` : ""}"></span><span>${t ? esc(t.label) : now ? "diving…" : "—"}</span><span class="pts">${r ? "+" + r.points : ""}</span></div>`;
     }).join("");
-    $("#hudPrompt").textContent = `${Math.min(save.results.length + (save.done ? 0 : 1), 7)}/7`;
+    $("#hudPrompt").textContent = `${Math.min(save.results.length + (save.done || phase === "reveal" ? 0 : 1), 7)}/7`;
   }
 
   async function boot() {
@@ -647,7 +652,8 @@
     save = store.get(saveKey()) || { date: daily.date, dayNumber: daily.dayNumber, prompts: daily.prompts, results: [], inProgress: null, done: false };
     if (save.inProgress !== null && save.results.length === save.inProgress) {
       const p = save.prompts[save.inProgress];
-      save.results.push({ promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0 });
+      forfeited = save.inProgress;
+      save.results.push({ promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0, left: true });
       save.inProgress = null;
       if (save.results.length >= 7) { save.done = true; recordStats(); }
       persist();
@@ -680,7 +686,7 @@
   function showResume() {
     phase = "resume";
     show("#stage"); renderLog();
-    $("#stage").innerHTML = `<div class="panel"><div class="eyebrow">dive #${daily.dayNumber} · in progress</div><div class="prompt">you're ${fmt(total() * 10)} m down. prompt ${save.results.length + 1} of 7 is waiting.</div><div class="actions"><span class="kbd">enter ↵</span><button class="btn small" id="resumeBtn">resume dive ▼</button></div></div>`;
+    $("#stage").innerHTML = `<div class="panel"><div class="eyebrow">dive #${daily.dayNumber} · in progress</div><div class="prompt">you're ${fmt(total() * 10)} m down. prompt ${save.results.length + 1} of 7 is waiting.</div>${forfeited !== null ? `<div class="feedback bad"><span class="x">✕</span> prompt ${forfeited + 1} counted as missed. you left mid-prompt.</div>` : ""}<div class="actions"><span class="kbd">enter ↵</span><button class="btn small" id="resumeBtn">resume dive ▼</button></div></div>`;
     $("#resumeBtn").onclick = () => startPrompt(save.results.length);
   }
 
@@ -731,7 +737,13 @@
     const input = $("#ans");
     const answer = (input?.value || "").trim();
     if (!answer) {
-      if (final) return finish(i, { promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0 }, null);
+      if (final) {
+        // Nothing typed: still fetch the gem + crowd answers so the reveal isn't empty.
+        judging = true; timerOn = false;
+        const data = await fetch("/api/judge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ promptId: p.id, giveUp: true }) })
+          .then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        return finish(i, { promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0 }, data);
+      }
       return shake();
     }
     judging = true;
@@ -754,7 +766,6 @@
       fb.className = "feedback bad";
       fb.innerHTML = `<span class="x">✕ not accepted</span> · ${esc(data.quip || "that doesn't count.")}`;
       shake();
-      input.value = "";
     } catch (e) {
       if (final) return finish(i, { promptId: p.id, text: p.text, answer: "", tried: answer, tier: "missed", points: 0 }, null);
       fb.className = "feedback bad";
@@ -762,11 +773,12 @@
     }
     judging = false;
     deadline = Date.now() + remaining;
-    input.disabled = false; input.focus();
+    input.disabled = false; input.focus(); input.select(); // keep the rejected text so a typo is one keystroke to fix
   }
 
   function finish(i, result, data) {
     timerOn = false; judging = false;
+    if (data?.gem) result.gem = data.gem;
     save.results[i] = result;
     save.inProgress = null;
     if (save.results.length >= 7) save.done = true;
@@ -784,7 +796,8 @@
     setDiveDepth(total() * 10);
     if (r.points) { burst(r.tier); sfx.sink(); setTimeout(() => sfx.tier(TIER_RANK[r.tier]), 150); } else sfx.bad();
     const gem = data?.gem, crowd = data?.commonAnswers || [];
-    const quip = r.tier === "huskrillion" && !r.quip ? "you found the designated gem. paws is weeping." : (r.quip || t.desc);
+    const quip = r.tier === "huskrillion" && !r.quip ? "you found the designated gem. paws is weeping."
+      : r.quip || (r.tier === "missed" ? "the clock beat you. the next one's yours." : t.desc);
     const yours = r.answer ? esc(r.canonical || r.answer) : r.tried ? `<s>${esc(r.tried)}</s>` : "—";
     $("#stage").innerHTML = `
       <div class="panel">
@@ -818,7 +831,7 @@
   function shareText() {
     const depth = total() * 10;
     const sq = save.results.map((r) => (TIERS[r.tier] || TIERS.missed).emoji).join("");
-    return `HUSKRILLION #${daily.dayNumber} 🐺\n▼ ${fmt(depth)} M · ${rankFor(depth)}\n${sq}\n${location.host}`;
+    return `HUSKRILLION #${daily.dayNumber} 🐺\n▼ ${fmt(depth)} M · ${rankFor(depth)}\n${sq}\n${location.origin}`;
   }
 
   function showDone() {
@@ -836,9 +849,14 @@
         <div class="big">▼ ${fmt(depth)} M</div>
         <div class="rank">${esc(rankFor(depth))}</div>
         <div class="tier-desc">${total()} / 700 points</div>
-        <div class="squares">${save.results.map((r) => (TIERS[r.tier] || TIERS.missed).emoji).join("")}</div>
+        <div class="sqrow" aria-hidden="true">${save.results.map((r) => `<i style="background:${(TIERS[r.tier] || TIERS.missed).color}"></i>`).join("")}</div>
         <ul class="loglist">
-          ${save.results.map((r) => { const t = TIERS[r.tier] || TIERS.missed; return `<li><span class="sq" style="background:${t.color}"></span><div><div class="q">${esc(r.text)}</div><div class="a">${r.answer ? esc(r.canonical || r.answer) : "—"}</div></div><div class="t" style="color:${t.color}">${esc(t.label)}<br/><span style="color:#fff">+${r.points}</span></div></li>`; }).join("")}
+          ${save.results.map((r) => {
+            const t = TIERS[r.tier] || TIERS.missed;
+            const a = r.answer ? esc(r.canonical || r.answer) : r.tried ? `<s>${esc(r.tried)}</s>` : r.left ? "— (left mid-prompt)" : "—";
+            const g = r.gem && r.tier !== "huskrillion" ? `<div class="g">◆ gem: ${esc(r.gem)}</div>` : "";
+            return `<li><span class="sq" style="background:${t.color}"></span><div><div class="q">${esc(r.text)}</div><div class="a">${a}</div>${g}</div><div class="t" style="color:${t.color}">${esc(t.label)}<br/><span style="color:#fff">+${r.points}</span></div></li>`;
+          }).join("")}
         </ul>
         <div class="actions" style="justify-content:stretch"><button class="btn" style="flex:1" id="shareBtn">share dive</button></div>
         <div class="stats">
