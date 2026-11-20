@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   const promptId = String(body?.promptId || "");
   const answer = String(body?.answer || "").replace(/\s+/g, " ").trim().slice(0, 60);
   const final = Boolean(body?.final); // true = timer ran out, this is the last attempt
-  if (!answer) return res.status(400).json({ error: "Empty answer." });
+  const giveUp = Boolean(body?.giveUp); // timer ran out with nothing typed: just reveal
 
   // Only today's (and yesterday's, for people playing across midnight) prompts are judgeable.
   const today = nyDateString();
@@ -27,6 +27,9 @@ export default async function handler(req, res) {
   const allowed = new Set([...promptsForDay(dayNum), ...promptsForDay(dayNum - 1)].map((p) => p.id));
   const prompt = PROMPT_MAP[promptId];
   if (!prompt || !allowed.has(promptId)) return res.status(400).json({ error: "Unknown prompt." });
+
+  if (giveUp) return res.status(200).json({ valid: false, retry: false, gem: prompt.gem, commonAnswers: prompt.obvious });
+  if (!answer) return res.status(400).json({ error: "Empty answer." });
 
   const ip = String(req.headers["x-forwarded-for"] || "anon").split(",")[0].trim();
   if (await rateLimited(ip, 150)) return res.status(429).json({ error: "Slow down, Husky. Try again in a bit." });
