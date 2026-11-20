@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Huskrillion · the daily dive into the Charles</title>
+<meta name="description" content="Huskrillion: the daily Northeastern trivia game where obvious answers sink and rare ones go deep." />
+<meta name="theme-color" content="#C8102E" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect width='8' height='8' fill='%23C8102E'/><rect x='1' y='1' width='2' height='2' fill='%23fff'/><rect x='5' y='1' width='2' height='2' fill='%23fff'/><rect x='2' y='4' width='4' height='2' fill='%23000'/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --red: #C8102E;
+    --red-dark: #8a0b20;
+    --black: #0b0b0b;
+    --ink: #161616;
+    --cream: #f4efe6;
+    --gray: #9a9a9a;
+    --px: 4px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background-color: var(--black);
+    background-image:
+      linear-gradient(rgba(200,16,46,.07) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(200,16,46,.07) 2px, transparent 2px);
+    background-size: 24px 24px;
+    color: var(--cream);
+    font-family: "VT323", ui-monospace, monospace;
+    font-size: 22px;
+    line-height: 1.15;
+    -webkit-font-smoothing: none;
+    image-rendering: pixelated;
+  }
+  .pixel { font-family: "Press Start 2P", ui-monospace, monospace; letter-spacing: 0; }
+  #app { max-width: 540px; margin: 0 auto; padding: 14px 14px 40px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 12px; }
+  .logo { font-size: 20px; color: var(--red); text-shadow: 3px 3px 0 #000, -1px -1px 0 #fff2; line-height: 1.2; }
+  .logo small { display: block; font-family: "VT323", monospace; font-size: 18px; color: var(--gray); text-shadow: none; margin-top: 4px; }
+  .icon-btn { background: var(--ink); color: var(--cream); border: 3px solid var(--cream); font-family: "Press Start 2P"; font-size: 12px; width: 38px; height: 38px; cursor: pointer; box-shadow: 3px 3px 0 var(--red); }
+  .icon-btn:active { transform: translate(3px,3px); box-shadow: none; }
+
+  .hud { display: grid; grid-template-columns: 1fr 1fr 1fr; border: var(--px) solid #000; background: var(--red); box-shadow: 6px 6px 0 #000; }
+  .hud div { padding: 7px 8px 6px; text-align: center; border-right: var(--px) solid #000; }
+  .hud div:last-child { border-right: 0; }
+  .hud .k { font-family: "Press Start 2P"; font-size: 8px; color: #ffd6dd; display: block; margin-bottom: 4px; }
+  .hud .v { font-family: "Press Start 2P"; font-size: 12px; color: #fff; }
+
+  .scene { position: relative; height: 210px; margin-top: 14px; border: var(--px) solid #000; box-shadow: 6px 6px 0 #000; overflow: hidden; background: #4f8fc0; transition: background-color 1.2s steps(12); }
+  .surface { position: absolute; left: 0; right: 0; top: 0; height: 8px; background: repeating-linear-gradient(90deg, #cfe8ff 0 16px, transparent 16px 32px); opacity: .7; transition: opacity 1s; }
+  .skyline { position: absolute; left: 0; right: 0; top: 8px; height: 26px; opacity: .25; transition: opacity 1s; }
+  .husky { position: absolute; left: 50%; top: 58px; width: 80px; height: 75px; transform: translateX(-50%); animation: bob 1.6s steps(4) infinite; }
+  .husky svg { width: 100%; height: 100%; }
+  @keyframes bob { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 6px); } }
+  .bubble { position: absolute; width: 8px; height: 8px; border: 2px solid #d9f1ff; background: transparent; animation: rise 2.4s steps(10) forwards; opacity: .8; }
+  @keyframes rise { to { transform: translateY(-190px); opacity: 0; } }
+  .gauge { position: absolute; right: 8px; top: 12px; bottom: 12px; width: 14px; border: 3px solid #000; background: #0006; }
+  .gauge-fill { position: absolute; left: 0; right: 0; top: 0; background: var(--red); height: 0%; transition: height 1.2s steps(14); }
+  .gauge-tick { position: absolute; left: -9px; width: 6px; height: 3px; background: #fff8; }
+  .milestone { position: absolute; left: 10px; bottom: 10px; right: 34px; font-size: 19px; color: #fff; text-shadow: 2px 2px 0 #000; }
+  .milestone b { font-family: "Press Start 2P"; font-size: 8px; color: #ffd6dd; display: block; margin-bottom: 3px; font-weight: normal; }
+  .depth-big { position: absolute; left: 10px; top: 14px; font-family: "Press Start 2P"; font-size: 14px; color: #fff; text-shadow: 3px 3px 0 #000; }
+  .debris { position: absolute; font-size: 0; }
+
+  .card { margin-top: 18px; background: var(--cream); color: var(--ink); border: var(--px) solid #000; box-shadow: 6px 6px 0 #000; padding: 16px; position: relative; }
+  .card.dark { background: var(--ink); color: var(--cream); border-color: #000; }
+  .eyebrow { font-family: "Press Start 2P"; font-size: 9px; color: var(--red); margin-bottom: 10px; }
+  .prompt-text { font-size: 30px; line-height: 1.05; margin: 0 0 14px; }
+  .timer { display: grid; grid-template-columns: repeat(25, 1fr); gap: 2px; height: 14px; margin-bottom: 14px; border: 3px solid #000; padding: 2px; background: #000; }
+  .timer i { background: var(--red); display: block; }
+  .timer i.off { background: #333; }
+  .timer.hurry i:not(.off) { background: #ff3b5c; animation: blink .5s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .35; } }
+  .row { display: flex; gap: 10px; }
+  input[type=text] { flex: 1; min-width: 0; font-family: "VT323", monospace; font-size: 26px; padding: 8px 10px; border: var(--px) solid #000; background: #fff; color: #000; outline: none; border-radius: 0; box-shadow: inset 3px 3px 0 #0002; }
+  input[type=text]:focus { border-color: var(--red); }
+  .btn { font-family: "Press Start 2P"; font-size: 12px; padding: 12px 14px; background: var(--red); color: #fff; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; cursor: pointer; text-transform: uppercase; border-radius: 0; }
+  .btn:hover { background: #df1636; }
+  .btn:active { transform: translate(4px,4px); box-shadow: none; }
+  .btn.ghost { background: var(--cream); color: #000; }
+  .btn.block { width: 100%; display: block; margin-top: 12px; padding: 16px; font-size: 13px; }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .hint { font-size: 18px; color: #555; margin-top: 10px; }
+  .dark .hint { color: var(--gray); }
+
+  .tier-badge { display: inline-block; font-family: "Press Start 2P"; font-size: 13px; padding: 10px 12px; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; color: #000; margin-bottom: 12px; line-height: 1.4; }
+  .pts { font-family: "Press Start 2P"; font-size: 18px; margin: 4px 0 10px; }
+  .answer-line { font-size: 26px; margin: 4px 0; }
+  .quip { font-size: 22px; background: #fff; border: 3px dashed #000; padding: 8px 10px; margin: 10px 0; }
+  .common { font-size: 19px; color: #444; }
+  .common b { font-family: "Press Start 2P"; font-size: 8px; display: block; color: var(--red); margin-bottom: 4px; font-weight: normal; }
+  .loading-dots::after { content: ""; animation: dots 1.2s steps(4) infinite; }
+  @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+
+  .tiers { list-style: none; padding: 0; margin: 8px 0 0; }
+  .tiers li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 2px dotted #0003; font-size: 20px; }
+  .dark .tiers li { border-color: #fff2; }
+  .sw { width: 18px; height: 18px; border: 3px solid #000; flex: none; }
+  .tiers .tp { margin-left: auto; font-family: "Press Start 2P"; font-size: 10px; white-space: nowrap; }
+
+  .results-list { list-style: none; padding: 0; margin: 10px 0 0; }
+  .results-list li { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: start; padding: 8px 0; border-bottom: 2px dotted #0003; }
+  .results-list .q { font-size: 17px; color: #555; }
+  .results-list .a { font-size: 22px; }
+  .results-list .t { font-family: "Press Start 2P"; font-size: 8px; text-align: right; line-height: 1.6; }
+  .big-depth { font-family: "Press Start 2P"; font-size: 28px; color: var(--red); text-shadow: 3px 3px 0 #000; margin: 6px 0; }
+  .rank-title { font-size: 26px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .stats div { background: #fff; border: 3px solid #000; padding: 8px 4px; text-align: center; }
+  .stats b { font-family: "Press Start 2P"; font-size: 14px; display: block; margin-bottom: 4px; }
+  .stats span { font-size: 16px; color: #444; }
+  .countdown { font-family: "Press Start 2P"; font-size: 12px; margin-top: 12px; text-align: center; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #000; color: #fff; border: 3px solid var(--red); font-family: "Press Start 2P"; font-size: 10px; padding: 12px 14px; z-index: 50; }
+
+  .modal-bg { position: fixed; inset: 0; background: #000b; display: flex; align-items: flex-start; justify-content: center; padding: 30px 14px; overflow: auto; z-index: 40; }
+  .modal-bg .card { max-width: 520px; width: 100%; margin: 0; }
+  .close-x { position: absolute; right: 10px; top: 10px; }
+  .footer { margin-top: 26px; text-align: center; font-size: 16px; color: #777; }
+  .shake { animation: shake .3s steps(3); }
+  @keyframes shake { 33% { transform: translateX(-6px); } 66% { transform: translateX(6px); } }
+  @media (max-width: 420px) {
+    .logo { font-size: 16px; }
+    .prompt-text { font-size: 27px; }
+    .btn { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo pixel">HUSKRILLION<small>the daily dive into the Charles</small></div>
+    <button class="icon-btn" id="helpBtn" aria-label="How to play">?</button>
+  </header>
+
+  <div class="hud" aria-live="polite">
+    <div><span class="k">DIVE</span><span class="v" id="hudDive">#–</span></div>
+    <div><span class="k">PROMPT</span><span class="v" id="hudPrompt">–/7</span></div>
+    <div><span class="k">DEPTH</span><span class="v" id="hudDepth">0m</span></div>
+  </div>
+
+  <div class="scene" id="scene" aria-hidden="true">
+    <div class="surface" id="surface"></div>
+    <svg class="skyline" id="skyline" viewBox="0 0 135 13" preserveAspectRatio="none" shape-rendering="crispEdges"></svg>
+    <div class="depth-big" id="sceneDepth">0 m</div>
+    <div class="husky" id="husky"></div>
+    <div class="gauge"><div class="gauge-fill" id="gaugeFill"></div></div>
+    <div class="milestone" id="milestone"><b>NOW PASSING</b>The Esplanade</div>
+  </div>
+
+  <main id="main"></main>
+
+  <div class="footer">A fan-made game for Huskies. Not affiliated with Northeastern University.<br/>Inspired by Krillion.</div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Config ----------
+  const MAX_DEPTH = 7000;
+  const SECONDS = 25;
+  const TIERS = {
+    tour_group:          { label: "Tour Group",            points: 10,  color: "#8fb3d1", emoji: "🟦", desc: "What every tour guide says. Basic." },
+    technically_correct: { label: "Technically Correct",   points: 15,  color: "#f2cf4a", emoji: "🟨", desc: "Valid, on a technicality. We see you." },
+    first_year:          { label: "First-Year",            points: 30,  color: "#5fbf72", emoji: "🟩", desc: "Solid answer. A little obvious." },
+    coop_veteran:        { label: "Co-op Veteran",         points: 60,  color: "#f39237", emoji: "🟧", desc: "You've been around the block (and the Fens)." },
+    fifth_year:          { label: "Fifth-Year Senior",     points: 85,  color: "#a77be8", emoji: "🟪", desc: "You have been here way too long." },
+    huskrillion:         { label: "One in a Huskrillion",  points: 100, color: "#C8102E", emoji: "🟥", desc: "Nobody else thought of that. Legend." },
+    waitlisted:          { label: "Waitlisted",            points: 0,   color: "#555555", emoji: "⬛", desc: "Not a valid answer. Try again next year." },
+    missed:              { label: "Missed the Green Line", points: 0,   color: "#bbbbbb", emoji: "⬜", desc: "Time ran out. Classic E branch." },
+  };
+  const MILESTONES = [
+    [0, "The Esplanade"],
+    [400, "A very confused duck"],
+    [900, "Someone's Husky Card"],
+    [1500, "A Bluebike nobody returned"],
+    [2100, "Three traffic cones from the Mass Pike"],
+    [2800, "A Green Line car from 1987"],
+    [3500, "A secret Snell study room"],
+    [4200, "Every lost umbrella from Marathon Monday"],
+    [5000, "Your rejected co-op applications"],
+    [5800, "The housing lottery algorithm"],
+    [6500, "The bottom of the Charles (smells weird)"],
+    [7000, "One in a Huskrillion territory"],
+  ];
+  const RANKS = [
+    [0, "Splashing at the Esplanade"],
+    [1000, "Duck Boat Passenger"],
+    [2000, "Charles River Kayaker"],
+    [3000, "Head of the Charles Rower"],
+    [4000, "Harbor Diver"],
+    [5000, "Deep-Sea Husky"],
+    [6000, "Legend of the Charles"],
+  ];
+  const JUDGING_LINES = [
+    "Consulting a fifth-year",
+    "Asking the tour guide",
+    "Checking with Paws",
+    "Waiting for the Green Line",
+    "Cross-referencing Snell archives",
+    "Polling the Curry food court",
+  ];
+
+  // ---------- Helpers ----------
+  const $ = (s) => document.querySelector(s);
+  const main = $("#main");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = (n) => Number(n).toLocaleString("en-US");
+  const store = {
+    get(k, d = null) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+  function toast(msg) {
+    const t = document.createElement("div");
+    t.className = "toast"; t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
+  }
+
+  // ---------- Pixel art ----------
+  const HUSKY = [
+    "..k..........k..",
+    ".kgk........kgk.",
+    ".kggk......kggk.",
+    ".kgggkkkkkkgggk.",
+    "kggggggggggggggk",
+    "kgggwwggggwwgggk",
+    "kggwwwwggwwwwggk",
+    "kgwwbkwwwwbkwwgk",
+    "kgwwkkwwwwkkwwgk",
+    ".kwwwwwkkwwwwwk.",
+    ".kwwwwwkkwwwwwk.",
+    "..kwwwwwwwwwwk..",
+    "..krrrrrrrrrrk..",
+    "...krrrwwrrrk...",
+    "....kkkkkkkk....",
+  ];
+  const PAL = { k: "#0b0b0b", g: "#7d8590", w: "#f7f7f7", b: "#56b6ff", r: "#C8102E" };
+  function pixelSVG(map) {
+    const h = map.length, w = map[0].length;
+    let rects = "";
+    map.forEach((row, y) => [...row].forEach((c, x) => {
+      if (PAL[c]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${PAL[c]}"/>`;
+    }));
+    return `<svg viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${rects}</svg>`;
+  }
+  $("#husky").innerHTML = pixelSVG(HUSKY);
+  // Blocky Boston skyline silhouette
+  (() => {
+    const hs = [6,9,5,11,8,4,12,7,10,6,13,5,8,11,7,9,4,10,6,12,8,5,9,7,11,6,10,8,5,9];
+    let x = 0, out = "";
+    hs.forEach((h, i) => { const w = 3 + (i % 3) * 2; out += `<rect x="${x}" y="${13 - h}" width="${w}" height="${h}" fill="#0b1a2a"/>`; x += w; });
+    $("#skyline").innerHTML = out;
+  })();
+
+  // ---------- Scene ----------
+  let shownDepth = 0;
+  function lerpColor(a, b, t) {
+    const pa = a.match(/\w\w/g).map((h) => parseInt(h, 16)), pb = b.match(/\w\w/g).map((h) => parseInt(h, 16));
+    return "#" + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  }
+  function setDepth(depth, animate = true) {
+    const t = Math.min(1, depth / MAX_DEPTH);
+    $("#scene").style.backgroundColor = t < .5 ? lerpColor("4f8fc0", "1b4a6b", t * 2) : lerpColor("1b4a6b", "060d14", (t - .5) * 2);
+    $("#surface").style.opacity = Math.max(0, .7 - t * 3);
+    $("#skyline").style.opacity = Math.max(0, .25 - t * 2);
+    $("#gaugeFill").style.height = (t * 100) + "%";
+    let ms = MILESTONES[0][1];
+    for (const [d, label] of MILESTONES) if (depth >= d) ms = label;
+    $("#milestone").innerHTML = `<b>NOW PASSING</b>${esc(ms)}`;
+    const from = shownDepth, to = depth;
+    shownDepth = depth;
+    if (!animate || from === to) { paintDepth(to); return; }
+    const start = performance.now(), dur = 1200;
+    (function step(now) {
+      const p = Math.min(1, (now - start) / dur);
+      paintDepth(Math.round(from + (to - from) * p / 10) * 10);
+      if (p < 1) requestAnimationFrame(step);
+    })(start);
+    for (let i = 0; i < 6; i++) setTimeout(spawnBubble, i * 120);
+  }
+  function paintDepth(d) {
+    $("#hudDepth").textContent = fmt(d) + "m";
+    $("#sceneDepth").textContent = fmt(d) + " m";
+  }
+  function spawnBubble() {
+    const b = document.createElement("div");
+    b.className = "bubble";
+    b.style.left = (40 + Math.random() * 20) + "%";
+    b.style.top = (110 + Math.random() * 40) + "px";
+    const s = [6, 8, 10][Math.floor(Math.random() * 3)];
+    b.style.width = b.style.height = s + "px";
+    $("#scene").appendChild(b);
+    setTimeout(() => b.remove(), 2500);
+  }
+  setInterval(() => { if (!document.hidden) spawnBubble(); }, 1100);
+
+  // ---------- State ----------
+  let daily = null;   // { date, dayNumber, prompts, msUntilReset }
+  let save = null;    // per-day progress
+  let timerId = null;
+  let resetAt = 0;
+
+  const saveKey = () => `huskrillion:${daily.date}`;
+  const persist = () => store.set(saveKey(), save);
+  const totalPoints = () => save.results.reduce((s, r) => s + r.points, 0);
+
+  async function boot() {
+    main.innerHTML = `<div class="card"><div class="eyebrow">LOADING</div><div class="prompt-text loading-dots">Filling the Charles</div></div>`;
+    try {
+      const r = await fetch("/api/daily", { cache: "no-store" });
+      if (!r.ok) throw new Error("bad response");
+      daily = await r.json();
+    } catch {
+      main.innerHTML = `<div class="card"><div class="eyebrow">UH OH</div><div class="prompt-text">Couldn't reach the river.</div><button class="btn block" onclick="location.reload()">Try again</button></div>`;
+      return;
+    }
+    resetAt = Date.now() + daily.msUntilReset;
+    $("#hudDive").textContent = "#" + daily.dayNumber;
+    save = store.get(saveKey()) || { date: daily.date, dayNumber: daily.dayNumber, prompts: daily.prompts, results: [], inProgress: null, done: false };
+    // Refreshing mid-prompt counts as running out of time (no rerolls!).
+    if (save.inProgress !== null && save.results.length === save.inProgress) {
+      const p = save.prompts[save.inProgress];
+      save.results.push({ promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0 });
+      save.inProgress = null;
+      persist();
+    }
+    shownDepth = totalPoints() * 10;
+    setDepth(shownDepth, false);
+    updatePromptHud();
+    if (save.done) return showResults();
+    if (save.results.length > 0) return showPrompt(save.results.length);
+    if (!store.get("huskrillion:seenHelp")) { store.set("huskrillion:seenHelp", true); openHelp(); }
+    showIntro();
+  }
+
+  function updatePromptHud() {
+    const n = Math.min(save.results.length + (save.done ? 0 : 1), save.prompts.length);
+    $("#hudPrompt").textContent = `${n}/${save.prompts.length}`;
+  }
+
+  // ---------- Screens ----------
+  function showIntro() {
+    const d = new Date(daily.date + "T12:00:00");
+    const nice = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+    main.innerHTML = `
+      <div class="card">
+        <div class="eyebrow">DIVE #${daily.dayNumber} · ${esc(nice.toUpperCase())}</div>
+        <div class="prompt-text">7 prompts. 25 seconds each. Obvious answers float. Rare answers sink you deep.</div>
+        <div class="hint">Every prompt has tons of right answers. Name the one nobody else will, and dive toward 7,000 m.</div>
+        <button class="btn block" id="startBtn">Start the dive ↓</button>
+        <button class="btn ghost block" id="howBtn">How to play</button>
+      </div>`;
+    $("#startBtn").onclick = () => showPrompt(0);
+    $("#howBtn").onclick = openHelp;
+  }
+
+  function showPrompt(i) {
+    const p = save.prompts[i];
+    save.inProgress = i; persist();
+    updatePromptHud();
+    main.innerHTML = `
+      <div class="card" id="promptCard">
+        <div class="eyebrow">PROMPT ${i + 1} OF ${save.prompts.length}</div>
+        <p class="prompt-text">${esc(p.text)}</p>
+        <div class="timer" id="timer">${"<i></i>".repeat(SECONDS)}</div>
+        <form class="row" id="answerForm" autocomplete="off">
+          <input type="text" id="answer" maxlength="60" placeholder="Your rarest answer…" aria-label="Your answer" autocapitalize="off" spellcheck="false" />
+          <button class="btn" type="submit">Dive</button>
+        </form>
+        <div class="hint">One answer. No do-overs. Think like a fifth-year.</div>
+      </div>`;
+    const input = $("#answer");
+    setTimeout(() => input.focus(), 30);
+    const deadline = Date.now() + SECONDS * 1000;
+    const cells = [...document.querySelectorAll("#timer i")];
+    clearInterval(timerId);
+    timerId = setInterval(() => {
+      const left = Math.max(0, deadline - Date.now());
+      const secs = Math.ceil(left / 1000);
+      cells.forEach((c, idx) => c.classList.toggle("off", idx >= secs));
+      $("#timer").classList.toggle("hurry", secs <= 5);
+      if (left <= 0) { clearInterval(timerId); submit(i, input.value, true); }
+    }, 100);
+    $("#answerForm").onsubmit = (e) => {
+      e.preventDefault();
+      if (!input.value.trim()) { $("#promptCard").classList.remove("shake"); void $("#promptCard").offsetWidth; $("#promptCard").classList.add("shake"); return; }
+      clearInterval(timerId);
+      submit(i, input.value, false);
+    };
+  }
+
+  async function submit(i, raw, timedOut) {
+    const p = save.prompts[i];
+    const answer = raw.trim();
+    if (!answer) return record(i, { promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0 });
+    const line = JUDGING_LINES[Math.floor(Math.random() * JUDGING_LINES.length)];
+    main.innerHTML = `
+      <div class="card">
+        <div class="eyebrow">${timedOut ? "TIME! SUBMITTING WHAT YOU HAD" : "JUDGING"}</div>
+        <p class="prompt-text">“${esc(answer)}”</p>
+        <div class="hint loading-dots">${esc(line)}</div>
+      </div>`;
+    try {
+      const r = await fetch("/api/judge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promptId: p.id, answer }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || "The judge fell into the Charles.");
+      record(i, {
+        promptId: p.id, text: p.text, answer, canonical: data.canonical,
+        tier: data.tier, points: data.points, quip: data.quip,
+        commonAnswers: data.commonAnswers || [], share: data.share,
+      });
+    } catch (e) {
+      main.innerHTML = `
+        <div class="card">
+          <div class="eyebrow">JUDGE ERROR</div>
+          <p class="prompt-text">${esc(e.message || "Something broke.")}</p>
+          <div class="hint">Your timer is paused. Retry and the same answer gets judged.</div>
+          <button class="btn block" id="retryBtn">Retry</button>
+          <button class="btn ghost block" id="skipBtn">Skip this prompt (0 pts)</button>
+        </div>`;
+      $("#retryBtn").onclick = () => submit(i, answer, false);
+      $("#skipBtn").onclick = () => record(i, { promptId: p.id, text: p.text, answer, tier: "missed", points: 0 });
+    }
+  }
+
+  function record(i, result) {
+    save.results[i] = result;
+    save.inProgress = null;
+    if (save.results.length >= save.prompts.length) save.done = true;
+    persist();
+    if (save.done) updateStats();
+    showReveal(i);
+  }
+
+  function showReveal(i) {
+    const r = save.results[i];
+    const t = TIERS[r.tier] || TIERS.waitlisted;
+    const last = i === save.prompts.length - 1;
+    setDepth(totalPoints() * 10, true);
+    const common = (r.commonAnswers || []).filter(Boolean);
+    main.innerHTML = `
+      <div class="card">
+        <div class="eyebrow">PROMPT ${i + 1} RESULT</div>
+        <div class="hint" style="margin:0 0 10px">${esc(r.text)}</div>
+        <div class="tier-badge" style="background:${t.color};${r.tier === "huskrillion" ? "color:#fff" : ""}">${esc(t.label.toUpperCase())}</div>
+        <div class="answer-line">${r.answer ? "“" + esc(r.canonical || r.answer) + "”" : "<i>(no answer)</i>"}</div>
+        <div class="pts" style="color:${r.points ? "var(--red)" : "#777"}">+${r.points} PTS · +${fmt(r.points * 10)} M</div>
+        ${r.quip ? `<div class="quip">${esc(r.quip)}</div>` : `<div class="quip">${esc(t.desc)}</div>`}
+        ${r.share != null ? `<div class="common">${r.share}% of divers said this today.</div>` : ""}
+        ${common.length ? `<div class="common"><b>WHAT THE TOUR GROUP SAID</b>${common.map(esc).join(" · ")}</div>` : ""}
+        <button class="btn block" id="nextBtn">${last ? "Surface for results ↑" : "Next prompt ↓"}</button>
+      </div>`;
+    $("#nextBtn").onclick = () => (last ? showResults() : showPrompt(i + 1));
+    $("#nextBtn").focus();
+  }
+
+  function rankFor(depth) {
+    let t = RANKS[0][1];
+    for (const [d, label] of RANKS) if (depth >= d) t = label;
+    return t;
+  }
+
+  function updateStats() {
+    const stats = store.get("huskrillion:stats", { played: 0, best: 0, streak: 0, lastDay: 0, recorded: {} });
+    if (stats.recorded?.[daily.dayNumber]) return;
+    const depth = totalPoints() * 10;
+    stats.played += 1;
+    stats.best = Math.max(stats.best, depth);
+    stats.streak = stats.lastDay === daily.dayNumber - 1 ? stats.streak + 1 : 1;
+    stats.lastDay = daily.dayNumber;
+    stats.recorded = { ...(stats.recorded || {}), [daily.dayNumber]: depth };
+    store.set("huskrillion:stats", stats);
+  }
+
+  function shareText() {
+    const depth = totalPoints() * 10;
+    const grid = save.results.map((r) => (TIERS[r.tier] || TIERS.waitlisted).emoji).join("");
+    return `Huskrillion #${daily.dayNumber} 🐺🌊\n${fmt(depth)} m deep · ${rankFor(depth)}\n${grid}\n${location.origin}`;
+  }
+
+  function showResults() {
+    clearInterval(timerId);
+    const depth = totalPoints() * 10;
+    setDepth(depth, false);
+    updatePromptHud();
+    const stats = store.get("huskrillion:stats", { played: 1, best: depth, streak: 1 });
+    main.innerHTML = `
+      <div class="card">
+        <div class="eyebrow">DIVE #${daily.dayNumber} COMPLETE</div>
+        <div class="big-depth">${fmt(depth)} M</div>
+        <div class="rank-title">${esc(rankFor(depth))}</div>
+        <div class="hint">${totalPoints()} / 700 points</div>
+        <ul class="results-list">
+          ${save.results.map((r) => {
+            const t = TIERS[r.tier] || TIERS.waitlisted;
+            return `<li>
+              <span class="sw" style="background:${t.color}"></span>
+              <div><div class="q">${esc(r.text)}</div><div class="a">${r.answer ? esc(r.canonical || r.answer) : "<i>—</i>"}</div></div>
+              <div class="t">${esc(t.label)}<br/>+${r.points}</div>
+            </li>`;
+          }).join("")}
+        </ul>
+        <button class="btn block" id="shareBtn">Share your dive</button>
+        <div class="stats">
+          <div><b>${stats.played}</b><span>dives</span></div>
+          <div><b>${stats.streak}</b><span>streak</span></div>
+          <div><b>${fmt(stats.best)}</b><span>best (m)</span></div>
+        </div>
+        <div class="countdown">NEXT DIVE IN <span id="cd">--:--:--</span></div>
+      </div>`;
+    $("#shareBtn").onclick = async () => {
+      const text = shareText();
+      try {
+        if (navigator.share && matchMedia("(pointer: coarse)").matches) { await navigator.share({ text }); return; }
+        await navigator.clipboard.writeText(text);
+        toast("COPIED! GO FLEX IN THE GROUP CHAT");
+      } catch {
+        prompt("Copy your results:", text);
+      }
+    };
+    const tick = () => {
+      const el = $("#cd"); if (!el) return;
+      const left = Math.max(0, resetAt - Date.now());
+      if (left <= 0) { location.reload(); return; }
+      const h = Math.floor(left / 3600000), m = Math.floor(left / 60000) % 60, s = Math.floor(left / 1000) % 60;
+      el.textContent = [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
+
+  // ---------- Help modal ----------
+  function openHelp() {
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    const order = ["tour_group", "technically_correct", "first_year", "coop_veteran", "fifth_year", "huskrillion", "waitlisted", "missed"];
+    bg.innerHTML = `
+      <div class="card" role="dialog" aria-label="How to play">
+        <button class="icon-btn close-x" aria-label="Close">X</button>
+        <div class="eyebrow">HOW TO PLAY</div>
+        <div class="prompt-text" style="font-size:26px">Name the answer nobody else will.</div>
+        <div class="hint" style="color:#333">
+          • 7 prompts a day, the same for every Husky.<br/>
+          • 25 seconds per prompt. One answer. No do-overs.<br/>
+          • Every prompt has lots of right answers. The more obscure (but still correct) your answer, the more points.<br/>
+          • Each point drops you 10 m into the Charles. A perfect dive is 7,000 m.<br/>
+          • An AI judge checks your answer and decides how rare it is. Spelling doesn't have to be perfect.
+        </div>
+        <ul class="tiers">
+          ${order.map((k) => `<li><span class="sw" style="background:${TIERS[k].color}"></span><span><b>${TIERS[k].label}</b> · ${TIERS[k].desc}</span><span class="tp">${TIERS[k].points}</span></li>`).join("")}
+        </ul>
+        <button class="btn block">Let's dive</button>
+      </div>`;
+    const close = () => { bg.remove(); const inp = $("#answer"); if (inp) inp.focus(); };
+    bg.addEventListener("click", (e) => { if (e.target === bg || e.target.closest("button")) close(); });
+    document.addEventListener("keydown", function onKey(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); } });
+    document.body.appendChild(bg);
+  }
+  $("#helpBtn").onclick = openHelp;
+
+  boot();
+})();
+</script>
+</body>
+</html>
