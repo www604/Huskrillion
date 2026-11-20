@@ -1,0 +1,8 @@
+{
+  "name": "huskrillion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Huskrillion: the daily rare-answer trivia dive for Northeastern University.",
+  "engines": { "node": ">=18" }
+}
