@@ -3,534 +3,864 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Huskrillion · the daily dive into the Charles</title>
-<meta name="description" content="Huskrillion: the daily Northeastern trivia game where obvious answers sink and rare ones go deep." />
-<meta name="theme-color" content="#C8102E" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect width='8' height='8' fill='%23C8102E'/><rect x='1' y='1' width='2' height='2' fill='%23fff'/><rect x='5' y='1' width='2' height='2' fill='%23fff'/><rect x='2' y='4' width='4' height='2' fill='%23000'/></svg>" />
+<title>Huskrillion · the daily dive</title>
+<meta name="description" content="Huskrillion: the daily Northeastern trivia dive. Obvious answers float. Rare answers sink you deep into the Charles." />
+<meta name="theme-color" content="#0a0610" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect width='8' height='8' fill='%23C8102E'/><rect x='1' y='2' width='2' height='2' fill='%235fe0ff'/><rect x='5' y='2' width='2' height='2' fill='%235fe0ff'/><rect x='3' y='5' width='2' height='1' fill='%23000'/></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --red: #C8102E;
-    --red-dark: #8a0b20;
-    --black: #0b0b0b;
-    --ink: #161616;
-    --cream: #f4efe6;
-    --gray: #9a9a9a;
-    --px: 4px;
+    --neon: #ff2a4d;
+    --nu: #C8102E;
+    --deep: #4a0d1a;
+    --ink: #07040a;
+    --panel: rgba(12, 6, 12, .94);
+    --text: #f3eef2;
+    --muted: #b3a5b0;
+    --glow: 0 0 0 3px #06030a, 0 0 0 6px var(--neon), 0 6px 0 6px var(--deep), 0 0 28px rgba(255, 42, 77, .35);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body {
-    background-color: var(--black);
-    background-image:
-      linear-gradient(rgba(200,16,46,.07) 2px, transparent 2px),
-      linear-gradient(90deg, rgba(200,16,46,.07) 2px, transparent 2px);
-    background-size: 24px 24px;
-    color: var(--cream);
-    font-family: "VT323", ui-monospace, monospace;
-    font-size: 22px;
-    line-height: 1.15;
-    -webkit-font-smoothing: none;
-    image-rendering: pixelated;
-  }
-  .pixel { font-family: "Press Start 2P", ui-monospace, monospace; letter-spacing: 0; }
-  #app { max-width: 540px; margin: 0 auto; padding: 14px 14px 40px; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #050309; }
+  body { color: var(--text); font-family: "VT323", ui-monospace, monospace; font-size: 22px; line-height: 1.1; -webkit-font-smoothing: none; }
+  button { font-family: inherit; }
+  #sea { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; z-index: 0; }
+  .layer { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+  .layer > * { pointer-events: auto; }
+  [hidden] { display: none !important; }
 
-  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 12px; }
-  .logo { font-size: 20px; color: var(--red); text-shadow: 3px 3px 0 #000, -1px -1px 0 #fff2; line-height: 1.2; }
-  .logo small { display: block; font-family: "VT323", monospace; font-size: 18px; color: var(--gray); text-shadow: none; margin-top: 4px; }
-  .icon-btn { background: var(--ink); color: var(--cream); border: 3px solid var(--cream); font-family: "Press Start 2P"; font-size: 12px; width: 38px; height: 38px; cursor: pointer; box-shadow: 3px 3px 0 var(--red); }
-  .icon-btn:active { transform: translate(3px,3px); box-shadow: none; }
+  #topbar { position: fixed; top: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: center; z-index: 5; pointer-events: none; }
+  #topbar > * { pointer-events: auto; }
+  .wordmark { font-family: "Press Start 2P"; font-size: 14px; color: #fff; text-shadow: -2px 0 var(--neon), 2px 0 #3a0a14; letter-spacing: .08em; opacity: 0; transition: opacity .4s; }
+  .wordmark.on { opacity: 1; }
+  .icons { display: flex; gap: 10px; margin-left: auto; }
+  .icon { width: 42px; height: 42px; background: rgba(10, 6, 12, .75); color: var(--text); border: 0; box-shadow: 0 0 0 2px #06030a, 0 0 0 4px rgba(255, 255, 255, .25); font-size: 22px; cursor: pointer; display: grid; place-items: center; }
+  .icon:hover { box-shadow: 0 0 0 2px #06030a, 0 0 0 4px var(--neon); }
 
-  .hud { display: grid; grid-template-columns: 1fr 1fr 1fr; border: var(--px) solid #000; background: var(--red); box-shadow: 6px 6px 0 #000; }
-  .hud div { padding: 7px 8px 6px; text-align: center; border-right: var(--px) solid #000; }
-  .hud div:last-child { border-right: 0; }
-  .hud .k { font-family: "Press Start 2P"; font-size: 8px; color: #ffd6dd; display: block; margin-bottom: 4px; }
-  .hud .v { font-family: "Press Start 2P"; font-size: 12px; color: #fff; }
+  #title { display: flex; flex-direction: column; align-items: center; }
+  .t-top { margin-top: max(8vh, 70px); text-align: center; padding: 0 16px; }
+  .logo { font-family: "Press Start 2P"; font-size: clamp(30px, 7.2vw, 96px); color: #fff; letter-spacing: .04em; text-shadow: -5px 0 0 var(--neon), 5px 0 0 #2a0a14, 0 0 30px rgba(255, 42, 77, .45); margin: 0; animation: glitch 6s steps(1) infinite; }
+  @keyframes glitch { 0%, 92%, 100% { transform: none; } 93% { transform: translate(3px, -1px); } 95% { transform: translate(-3px, 1px); } 97% { transform: translate(1px, 0); } }
+  .sub { margin-top: 22px; font-size: clamp(22px, 2.6vw, 34px); letter-spacing: .5em; color: #fff; text-shadow: 0 0 12px rgba(255, 42, 77, .8), 2px 2px 0 #3a0a14; }
+  .tag { margin-top: 14px; font-size: clamp(17px, 1.7vw, 23px); letter-spacing: .12em; color: #2a1120; text-shadow: 0 1px 0 rgba(255, 255, 255, .4); }
+  .t-bottom { position: absolute; top: calc(58vh + 26px); width: min(640px, calc(100% - 32px)); display: flex; flex-direction: column; gap: 18px; }
+  .howto-toggle { background: none; border: 0; color: var(--muted); font-size: 20px; letter-spacing: .25em; text-transform: uppercase; cursor: pointer; text-align: left; padding: 0; }
+  .howto { margin: 0; padding: 14px 18px; list-style: none; background: var(--panel); box-shadow: 0 0 0 2px #06030a, 0 0 0 4px rgba(255, 42, 77, .55); font-size: 21px; letter-spacing: .04em; }
+  .howto li { padding: 3px 0; }
+  .howto li::before { content: "▸ "; color: var(--neon); }
+  .btn { font-size: clamp(24px, 2.4vw, 32px); letter-spacing: .22em; color: #fff; background: #1a0b12; border: 0; box-shadow: var(--glow); padding: 16px 26px; cursor: pointer; text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 42, 77, .7); }
+  .btn:hover { background: #2b0f1b; }
+  .btn:active { transform: translateY(4px); box-shadow: 0 0 0 3px #06030a, 0 0 0 6px var(--neon), 0 2px 0 6px var(--deep); }
+  .btn.small { font-size: 22px; padding: 10px 16px; letter-spacing: .14em; }
+  .t-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); letter-spacing: .2em; font-size: 19px; text-transform: uppercase; }
+  .foot { color: #8a7d88; font-size: 16px; letter-spacing: .08em; text-align: center; margin-top: 4px; }
 
-  .scene { position: relative; height: 210px; margin-top: 14px; border: var(--px) solid #000; box-shadow: 6px 6px 0 #000; overflow: hidden; background: #4f8fc0; transition: background-color 1.2s steps(12); }
-  .surface { position: absolute; left: 0; right: 0; top: 0; height: 8px; background: repeating-linear-gradient(90deg, #cfe8ff 0 16px, transparent 16px 32px); opacity: .7; transition: opacity 1s; }
-  .skyline { position: absolute; left: 0; right: 0; top: 8px; height: 26px; opacity: .25; transition: opacity 1s; }
-  .husky { position: absolute; left: 50%; top: 58px; width: 80px; height: 75px; transform: translateX(-50%); animation: bob 1.6s steps(4) infinite; }
-  .husky svg { width: 100%; height: 100%; }
-  @keyframes bob { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 6px); } }
-  .bubble { position: absolute; width: 8px; height: 8px; border: 2px solid #d9f1ff; background: transparent; animation: rise 2.4s steps(10) forwards; opacity: .8; }
-  @keyframes rise { to { transform: translateY(-190px); opacity: 0; } }
-  .gauge { position: absolute; right: 8px; top: 12px; bottom: 12px; width: 14px; border: 3px solid #000; background: #0006; }
-  .gauge-fill { position: absolute; left: 0; right: 0; top: 0; background: var(--red); height: 0%; transition: height 1.2s steps(14); }
-  .gauge-tick { position: absolute; left: -9px; width: 6px; height: 3px; background: #fff8; }
-  .milestone { position: absolute; left: 10px; bottom: 10px; right: 34px; font-size: 19px; color: #fff; text-shadow: 2px 2px 0 #000; }
-  .milestone b { font-family: "Press Start 2P"; font-size: 8px; color: #ffd6dd; display: block; margin-bottom: 3px; font-weight: normal; }
-  .depth-big { position: absolute; left: 10px; top: 14px; font-family: "Press Start 2P"; font-size: 14px; color: #fff; text-shadow: 3px 3px 0 #000; }
-  .debris { position: absolute; font-size: 0; }
+  #hud { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4; }
+  .pill { background: rgba(10, 6, 12, .8); box-shadow: 0 0 0 2px #06030a, 0 0 0 4px rgba(255, 42, 77, .7); padding: 6px 14px; letter-spacing: .18em; font-size: 22px; white-space: nowrap; }
+  .pill b { color: var(--neon); font-weight: normal; }
+  @media (max-width: 760px) { .wordmark { display: none; } #hud { top: 66px; gap: 6px; } .pill { font-size: 18px; padding: 4px 8px; letter-spacing: .1em; } }
 
-  .card { margin-top: 18px; background: var(--cream); color: var(--ink); border: var(--px) solid #000; box-shadow: 6px 6px 0 #000; padding: 16px; position: relative; }
-  .card.dark { background: var(--ink); color: var(--cream); border-color: #000; }
-  .eyebrow { font-family: "Press Start 2P"; font-size: 9px; color: var(--red); margin-bottom: 10px; }
-  .prompt-text { font-size: 30px; line-height: 1.05; margin: 0 0 14px; }
-  .timer { display: grid; grid-template-columns: repeat(25, 1fr); gap: 2px; height: 14px; margin-bottom: 14px; border: 3px solid #000; padding: 2px; background: #000; }
-  .timer i { background: var(--red); display: block; }
-  .timer i.off { background: #333; }
-  .timer.hurry i:not(.off) { background: #ff3b5c; animation: blink .5s steps(2) infinite; }
+  #log { position: fixed; left: 18px; top: 84px; z-index: 3; display: flex; flex-direction: column; gap: 8px; width: 290px; }
+  .slot { display: grid; grid-template-columns: 26px 18px 1fr auto; gap: 8px; align-items: center; background: rgba(10, 6, 12, .7); padding: 6px 10px; box-shadow: 0 0 0 2px #06030a, 0 0 0 3px rgba(255, 255, 255, .12); font-size: 19px; letter-spacing: .06em; color: var(--muted); }
+  .slot.now { box-shadow: 0 0 0 2px #06030a, 0 0 0 3px var(--neon); color: #fff; }
+  .slot .sq { width: 16px; height: 16px; box-shadow: 0 0 0 2px #06030a; background: #2a2430; }
+  .slot .pts { color: #fff; }
+  @media (max-width: 1199px) { #log { display: none; } }
+
+  #stage { display: flex; justify-content: center; align-items: flex-end; padding: 0 16px max(4vh, 16px); }
+  .panel { width: min(780px, 100%); background: var(--panel); box-shadow: var(--glow); padding: 22px 26px 24px; position: relative; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .eyebrow { color: var(--muted); letter-spacing: .25em; font-size: 19px; text-transform: uppercase; }
+  .secs { font-family: "Press Start 2P"; font-size: 20px; color: #fff; }
+  .secs.hurry { color: var(--neon); animation: blink .5s steps(2) infinite; }
   @keyframes blink { 50% { opacity: .35; } }
-  .row { display: flex; gap: 10px; }
-  input[type=text] { flex: 1; min-width: 0; font-family: "VT323", monospace; font-size: 26px; padding: 8px 10px; border: var(--px) solid #000; background: #fff; color: #000; outline: none; border-radius: 0; box-shadow: inset 3px 3px 0 #0002; }
-  input[type=text]:focus { border-color: var(--red); }
-  .btn { font-family: "Press Start 2P"; font-size: 12px; padding: 12px 14px; background: var(--red); color: #fff; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; cursor: pointer; text-transform: uppercase; border-radius: 0; }
-  .btn:hover { background: #df1636; }
-  .btn:active { transform: translate(4px,4px); box-shadow: none; }
-  .btn.ghost { background: var(--cream); color: #000; }
-  .btn.block { width: 100%; display: block; margin-top: 12px; padding: 16px; font-size: 13px; }
-  .btn[disabled] { opacity: .5; cursor: default; }
-  .hint { font-size: 18px; color: #555; margin-top: 10px; }
-  .dark .hint { color: var(--gray); }
-
-  .tier-badge { display: inline-block; font-family: "Press Start 2P"; font-size: 13px; padding: 10px 12px; border: var(--px) solid #000; box-shadow: 4px 4px 0 #000; color: #000; margin-bottom: 12px; line-height: 1.4; }
-  .pts { font-family: "Press Start 2P"; font-size: 18px; margin: 4px 0 10px; }
-  .answer-line { font-size: 26px; margin: 4px 0; }
-  .quip { font-size: 22px; background: #fff; border: 3px dashed #000; padding: 8px 10px; margin: 10px 0; }
-  .common { font-size: 19px; color: #444; }
-  .common b { font-family: "Press Start 2P"; font-size: 8px; display: block; color: var(--red); margin-bottom: 4px; font-weight: normal; }
-  .loading-dots::after { content: ""; animation: dots 1.2s steps(4) infinite; }
+  .prompt { font-size: clamp(30px, 3.4vw, 46px); line-height: 1.02; margin: 10px 0 16px; letter-spacing: .02em; }
+  .timer { display: grid; grid-template-columns: repeat(25, 1fr); gap: 3px; height: 12px; margin-bottom: 16px; }
+  .timer i { background: var(--neon); box-shadow: 0 0 8px rgba(255, 42, 77, .6); }
+  .timer i.off { background: #2a1a24; box-shadow: none; }
+  .timer.paused i:not(.off) { background: #8a7d88; box-shadow: none; }
+  .answer-row { display: flex; gap: 14px; }
+  .answer-row input { flex: 1; min-width: 0; font-family: "VT323", monospace; font-size: clamp(28px, 2.8vw, 36px); letter-spacing: .04em; padding: 8px 14px; color: #fff; background: #0a0508; border: 0; outline: none; border-radius: 0; box-shadow: 0 0 0 3px #06030a, 0 0 0 5px rgba(255, 255, 255, .35); }
+  .answer-row input:focus { box-shadow: 0 0 0 3px #06030a, 0 0 0 5px var(--neon), 0 0 22px rgba(255, 42, 77, .35); }
+  .answer-row input:disabled { opacity: .6; }
+  .feedback { min-height: 26px; margin-top: 12px; font-size: 21px; letter-spacing: .04em; color: var(--muted); }
+  .feedback.bad { color: #ff8a9b; }
+  .feedback .x { color: var(--neon); letter-spacing: .2em; }
+  .dots::after { content: ""; animation: dots 1s steps(4) infinite; }
   @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
-
-  .tiers { list-style: none; padding: 0; margin: 8px 0 0; }
-  .tiers li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 2px dotted #0003; font-size: 20px; }
-  .dark .tiers li { border-color: #fff2; }
-  .sw { width: 18px; height: 18px; border: 3px solid #000; flex: none; }
-  .tiers .tp { margin-left: auto; font-family: "Press Start 2P"; font-size: 10px; white-space: nowrap; }
-
-  .results-list { list-style: none; padding: 0; margin: 10px 0 0; }
-  .results-list li { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: start; padding: 8px 0; border-bottom: 2px dotted #0003; }
-  .results-list .q { font-size: 17px; color: #555; }
-  .results-list .a { font-size: 22px; }
-  .results-list .t { font-family: "Press Start 2P"; font-size: 8px; text-align: right; line-height: 1.6; }
-  .big-depth { font-family: "Press Start 2P"; font-size: 28px; color: var(--red); text-shadow: 3px 3px 0 #000; margin: 6px 0; }
-  .rank-title { font-size: 26px; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
-  .stats div { background: #fff; border: 3px solid #000; padding: 8px 4px; text-align: center; }
-  .stats b { font-family: "Press Start 2P"; font-size: 14px; display: block; margin-bottom: 4px; }
-  .stats span { font-size: 16px; color: #444; }
-  .countdown { font-family: "Press Start 2P"; font-size: 12px; margin-top: 12px; text-align: center; }
-  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #000; color: #fff; border: 3px solid var(--red); font-family: "Press Start 2P"; font-size: 10px; padding: 12px 14px; z-index: 50; }
-
-  .modal-bg { position: fixed; inset: 0; background: #000b; display: flex; align-items: flex-start; justify-content: center; padding: 30px 14px; overflow: auto; z-index: 40; }
-  .modal-bg .card { max-width: 520px; width: 100%; margin: 0; }
-  .close-x { position: absolute; right: 10px; top: 10px; }
-  .footer { margin-top: 26px; text-align: center; font-size: 16px; color: #777; }
   .shake { animation: shake .3s steps(3); }
-  @keyframes shake { 33% { transform: translateX(-6px); } 66% { transform: translateX(6px); } }
-  @media (max-width: 420px) {
-    .logo { font-size: 16px; }
-    .prompt-text { font-size: 27px; }
-    .btn { font-size: 10px; }
-  }
+  @keyframes shake { 33% { transform: translateX(-8px); } 66% { transform: translateX(8px); } }
+
+  .tier-name { font-size: clamp(42px, 5.4vw, 72px); line-height: .95; letter-spacing: .06em; text-transform: uppercase; margin: 8px 0 4px; }
+  .tier-desc { color: var(--muted); font-size: 21px; letter-spacing: .06em; }
+  .gain { font-family: "Press Start 2P"; font-size: clamp(14px, 1.4vw, 18px); margin: 14px 0 12px; letter-spacing: .06em; }
+  .your { font-size: 26px; }
+  .your span { color: var(--muted); letter-spacing: .2em; font-size: 18px; text-transform: uppercase; margin-right: 8px; }
+  .quip { margin: 12px 0; padding: 10px 14px; background: rgba(255, 255, 255, .06); border-left: 4px solid var(--neon); font-size: 23px; }
+  .reveal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0 4px; }
+  .reveal-grid div { background: rgba(255, 255, 255, .04); padding: 10px 12px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .08); font-size: 22px; }
+  .reveal-grid b { display: block; font-weight: normal; color: var(--muted); letter-spacing: .25em; font-size: 16px; margin-bottom: 4px; text-transform: uppercase; }
+  .reveal-grid .gem { color: #ff6b84; }
+  .actions { display: flex; justify-content: flex-end; gap: 14px; margin-top: 16px; align-items: center; }
+  .kbd { color: var(--muted); font-size: 18px; letter-spacing: .15em; }
+  @media (max-width: 640px) { .reveal-grid { grid-template-columns: 1fr; gap: 8px; margin-top: 8px; } .reveal-grid div { padding: 6px 10px; font-size: 20px; } .panel { padding: 16px 16px 18px; } .kbd, .tier-desc.d, .eyebrow .pt { display: none; } .tier-name { font-size: 36px; } .quip { font-size: 20px; margin: 8px 0; } .your { font-size: 22px; } .gain { margin: 8px 0; } .btn { letter-spacing: .12em; font-size: 22px; padding: 14px 16px; } .prompt { font-size: 28px; } }
+
+  #done { display: flex; justify-content: center; align-items: center; padding: 70px 16px 16px; }
+  @media (min-width: 1200px) { #done { justify-content: flex-end; padding-right: 7vw; } }
+  .results { width: min(620px, 100%); max-height: calc(100vh - 90px); overflow: auto; }
+  .big { font-family: "Press Start 2P"; font-size: clamp(30px, 4vw, 52px); color: #fff; text-shadow: -3px 0 var(--neon), 3px 0 #2a0a14; margin: 10px 0 6px; }
+  .rank { font-size: 30px; letter-spacing: .06em; }
+  .squares { font-size: 30px; letter-spacing: 4px; margin: 10px 0; }
+  .loglist { list-style: none; padding: 0; margin: 10px 0; }
+  .loglist li { display: grid; grid-template-columns: 18px 1fr auto; gap: 12px; padding: 8px 0; border-bottom: 2px dotted rgba(255, 255, 255, .1); align-items: start; }
+  .loglist .sq { width: 16px; height: 16px; margin-top: 4px; box-shadow: 0 0 0 2px #06030a; }
+  .loglist .q { color: var(--muted); font-size: 18px; }
+  .loglist .a { font-size: 24px; }
+  .loglist .t { text-align: right; font-size: 18px; letter-spacing: .06em; white-space: nowrap; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 8px; }
+  .stats div { text-align: center; background: rgba(255, 255, 255, .04); padding: 8px 4px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .08); }
+  .stats b { display: block; font-family: "Press Start 2P"; font-size: 16px; font-weight: normal; margin-bottom: 6px; }
+  .stats span { color: var(--muted); font-size: 16px; letter-spacing: .12em; text-transform: uppercase; }
+  .next { text-align: center; color: var(--muted); letter-spacing: .2em; margin-top: 12px; text-transform: uppercase; }
+  .next b { color: #fff; font-weight: normal; }
+
+  #modal { position: fixed; inset: 0; background: rgba(3, 1, 6, .75); z-index: 10; display: flex; justify-content: center; align-items: center; padding: 16px; }
+  #modal .panel { max-width: 640px; max-height: 90vh; overflow: auto; }
+  .tiers { list-style: none; padding: 0; margin: 12px 0 0; }
+  .tiers li { display: grid; grid-template-columns: 18px 1fr auto; gap: 12px; padding: 7px 0; border-bottom: 2px dotted rgba(255, 255, 255, .1); font-size: 21px; align-items: center; }
+  .tiers .sq { width: 16px; height: 16px; box-shadow: 0 0 0 2px #06030a; }
+  .tiers em { font-style: normal; color: var(--muted); }
+  .toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); background: #0a0508; box-shadow: var(--glow); padding: 12px 18px; letter-spacing: .2em; z-index: 20; font-size: 20px; }
 </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <div class="logo pixel">HUSKRILLION<small>the daily dive into the Charles</small></div>
-    <button class="icon-btn" id="helpBtn" aria-label="How to play">?</button>
-  </header>
+<canvas id="sea" aria-hidden="true"></canvas>
 
-  <div class="hud" aria-live="polite">
-    <div><span class="k">DIVE</span><span class="v" id="hudDive">#–</span></div>
-    <div><span class="k">PROMPT</span><span class="v" id="hudPrompt">–/7</span></div>
-    <div><span class="k">DEPTH</span><span class="v" id="hudDepth">0m</span></div>
+<div id="topbar">
+  <div class="wordmark" id="wordmark">HUSKRILLION</div>
+  <div class="icons">
+    <button class="icon" id="muteBtn" aria-label="Toggle sound" title="Sound">♪</button>
+    <button class="icon" id="helpBtn" aria-label="How to play" title="How to play">?</button>
   </div>
-
-  <div class="scene" id="scene" aria-hidden="true">
-    <div class="surface" id="surface"></div>
-    <svg class="skyline" id="skyline" viewBox="0 0 135 13" preserveAspectRatio="none" shape-rendering="crispEdges"></svg>
-    <div class="depth-big" id="sceneDepth">0 m</div>
-    <div class="husky" id="husky"></div>
-    <div class="gauge"><div class="gauge-fill" id="gaugeFill"></div></div>
-    <div class="milestone" id="milestone"><b>NOW PASSING</b>The Esplanade</div>
-  </div>
-
-  <main id="main"></main>
-
-  <div class="footer">A fan-made game for Huskies. Not affiliated with Northeastern University.<br/>Inspired by Krillion.</div>
 </div>
+
+<div id="hud" hidden>
+  <div class="pill">DIVE <b id="hudDive">#1</b></div>
+  <div class="pill">PROMPT <b id="hudPrompt">1/7</b></div>
+  <div class="pill">▼ <b id="hudDepth">0</b> M</div>
+</div>
+
+<aside id="log" hidden></aside>
+
+<section class="layer" id="title" hidden>
+  <div class="t-top">
+    <h1 class="logo">HUSKRILLION</h1>
+    <div class="sub">THE DAILY DIVE</div>
+    <div class="tag">7 prompts · 25 seconds each · rarer answers sink deeper</div>
+  </div>
+  <div class="t-bottom">
+    <button class="howto-toggle" id="howtoToggle" aria-expanded="false">▸ how to play</button>
+    <ul class="howto" id="howto" hidden>
+      <li>7 prompts a day. same for every husky.</li>
+      <li>25 seconds to name one thing. not accepted? keep trying.</li>
+      <li>rare answers sink you deep. obvious ones float.</li>
+      <li>the pick that feels clever? the honors kids thought of it too.</li>
+      <li>every point sinks you 10 metres. 7,000 m is the bottom of the charles.</li>
+      <li>one dive per day. no second chances.</li>
+    </ul>
+    <button class="btn" id="beginBtn">▼ begin descent ▼</button>
+    <div class="t-meta"><span id="metaDive">dive #– · streak 0</span><span id="metaBest"></span></div>
+    <div class="foot">fan-made for huskies. not affiliated with northeastern university. inspired by krillion.</div>
+  </div>
+</section>
+
+<section class="layer" id="stage" hidden></section>
+<section class="layer" id="done" hidden></section>
+<div id="modal" hidden></div>
 
 <script>
 (() => {
   "use strict";
 
-  // ---------- Config ----------
-  const MAX_DEPTH = 7000;
+  // ================= Config =================
   const SECONDS = 25;
+  const MAX_DEPTH = 7000;
+  const PX_PER_M = 0.15;
   const TIERS = {
-    tour_group:          { label: "Tour Group",            points: 10,  color: "#8fb3d1", emoji: "🟦", desc: "What every tour guide says. Basic." },
-    technically_correct: { label: "Technically Correct",   points: 15,  color: "#f2cf4a", emoji: "🟨", desc: "Valid, on a technicality. We see you." },
-    first_year:          { label: "First-Year",            points: 30,  color: "#5fbf72", emoji: "🟩", desc: "Solid answer. A little obvious." },
-    coop_veteran:        { label: "Co-op Veteran",         points: 60,  color: "#f39237", emoji: "🟧", desc: "You've been around the block (and the Fens)." },
-    fifth_year:          { label: "Fifth-Year Senior",     points: 85,  color: "#a77be8", emoji: "🟪", desc: "You have been here way too long." },
-    huskrillion:         { label: "One in a Huskrillion",  points: 100, color: "#C8102E", emoji: "🟥", desc: "Nobody else thought of that. Legend." },
-    waitlisted:          { label: "Waitlisted",            points: 0,   color: "#555555", emoji: "⬛", desc: "Not a valid answer. Try again next year." },
-    missed:              { label: "Missed the Green Line", points: 0,   color: "#bbbbbb", emoji: "⬜", desc: "Time ran out. Classic E branch." },
+    tour_group:   { label: "Tour Group",            points: 10,  color: "#9fb7cc", emoji: "🟦", desc: "what every tour guide says." },
+    honors_kid:   { label: "Honors Kid",            points: 15,  color: "#f2cf4a", emoji: "🟨", desc: "the 'clever' pick. the whole school thought of it too." },
+    first_year:   { label: "First-Year",            points: 30,  color: "#5fd38a", emoji: "🟩", desc: "solid. a little obvious." },
+    coop_veteran: { label: "Co-op Veteran",         points: 60,  color: "#ff9a3d", emoji: "🟧", desc: "you've been around the block (and the fens)." },
+    fifth_year:   { label: "Fifth-Year Senior",     points: 85,  color: "#b388ff", emoji: "🟪", desc: "deep cut. you've been here way too long." },
+    huskrillion:  { label: "One in a Huskrillion",  points: 100, color: "#ff2a4d", emoji: "🟥", desc: "the designated gem. legend status." },
+    missed:       { label: "Missed the Green Line", points: 0,   color: "#6b6b75", emoji: "⬛", desc: "time ran out. classic E branch." },
   };
-  const MILESTONES = [
-    [0, "The Esplanade"],
-    [400, "A very confused duck"],
-    [900, "Someone's Husky Card"],
-    [1500, "A Bluebike nobody returned"],
-    [2100, "Three traffic cones from the Mass Pike"],
-    [2800, "A Green Line car from 1987"],
-    [3500, "A secret Snell study room"],
-    [4200, "Every lost umbrella from Marathon Monday"],
-    [5000, "Your rejected co-op applications"],
-    [5800, "The housing lottery algorithm"],
-    [6500, "The bottom of the Charles (smells weird)"],
-    [7000, "One in a Huskrillion territory"],
-  ];
+  const TIER_ORDER = ["tour_group", "honors_kid", "first_year", "coop_veteran", "fifth_year", "huskrillion", "missed"];
+  const TIER_RANK = { missed: 0, tour_group: 1, honors_kid: 1, first_year: 2, coop_veteran: 3, fifth_year: 4, huskrillion: 5 };
   const RANKS = [
-    [0, "Splashing at the Esplanade"],
-    [1000, "Duck Boat Passenger"],
-    [2000, "Charles River Kayaker"],
-    [3000, "Head of the Charles Rower"],
-    [4000, "Harbor Diver"],
-    [5000, "Deep-Sea Husky"],
-    [6000, "Legend of the Charles"],
+    [0, "Splashing at the Esplanade"], [1000, "Duck Boat Tourist"], [2000, "Charles River Kayaker"],
+    [3000, "Head of the Charles Rower"], [4000, "Harbor Diver"], [5000, "Deep-Sea Husky"],
+    [6000, "Legend of the Charles"], [7000, "One in a Huskrillion"],
   ];
-  const JUDGING_LINES = [
-    "Consulting a fifth-year",
-    "Asking the tour guide",
-    "Checking with Paws",
-    "Waiting for the Green Line",
-    "Cross-referencing Snell archives",
-    "Polling the Curry food court",
-  ];
+  const JUDGING = ["asking a fifth-year", "checking with paws", "consulting the bouncer at punter's", "waiting on the green line", "polling the frat basement", "cross-referencing snell"];
 
-  // ---------- Helpers ----------
+  // ================= Helpers =================
   const $ = (s) => document.querySelector(s);
-  const main = $("#main");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const fmt = (n) => Number(n).toLocaleString("en-US");
+  const fmt = (n) => Math.round(n).toLocaleString("en-US");
   const store = {
-    get(k, d = null) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    get(k, d = null) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
+  const isDesktop = () => innerWidth >= 1100;
   function toast(msg) {
     const t = document.createElement("div");
     t.className = "toast"; t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2200);
   }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
 
-  // ---------- Pixel art ----------
-  const HUSKY = [
+  // ================= Sound =================
+  let AC = null;
+  let muted = store.get("hk:muted", false);
+  function tone(freq, dur = 0.08, type = "square", vol = 0.035, when = 0, slide = 0) {
+    if (muted) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      const o = AC.createOscillator(), g = AC.createGain();
+      const t = AC.currentTime + when;
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(AC.destination);
+      o.start(t); o.stop(t + dur + 0.02);
+    } catch {}
+  }
+  const sfx = {
+    key() { tone(900 + Math.random() * 300, 0.02, "square", 0.01); },
+    submit() { tone(520, 0.05); tone(780, 0.06, "square", 0.035, 0.05); },
+    bad() { tone(200, 0.12, "sawtooth", 0.04); tone(150, 0.18, "sawtooth", 0.04, 0.1); },
+    tick() { tone(1400, 0.03, "square", 0.02); },
+    splash() { for (let i = 0; i < 6; i++) tone(300 + Math.random() * 500, 0.08, "triangle", 0.03, i * 0.03, -200); },
+    sink() { tone(400, 0.6, "sine", 0.05, 0, -300); },
+    tier(rank) {
+      const notes = [262, 330, 392, 523, 659, 784];
+      for (let i = 0; i <= rank; i++) tone(notes[i], 0.12, "square", 0.035, i * 0.08);
+      if (rank >= 5) for (let i = 0; i < 6; i++) tone(1046 + i * 120, 0.06, "triangle", 0.03, 0.5 + i * 0.05);
+    },
+  };
+  function paintMute() { $("#muteBtn").textContent = muted ? "×" : "♪"; $("#muteBtn").style.opacity = muted ? .6 : 1; }
+  $("#muteBtn").onclick = () => { muted = !muted; store.set("hk:muted", muted); paintMute(); };
+  paintMute();
+
+  // ================= Pixel world =================
+  const cv = $("#sea"), ctx = cv.getContext("2d");
+  const buf = document.createElement("canvas"), b = buf.getContext("2d");
+  let S = 4, W = 300, H = 200, DPR = 1;
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const w = innerWidth, h = innerHeight;
+    S = w >= 1500 ? 5 : w >= 900 ? 4 : 3;
+    W = Math.ceil(w / S); H = Math.ceil(h / S);
+    buf.width = W; buf.height = H;
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+    initSnow();
+  }
+
+  const PAL = {
+    k: "#0b0b10", g: "#8a93a0", w: "#f4f4f6", l: "#5fe0ff", r: "#C8102E", R: "#ff2a4d",
+    o: "#ff8a1f", d: "#7a5634", c: "#9fd9ff",
+  };
+  function drawMap(map, x, y) {
+    for (let j = 0; j < map.length; j++) {
+      const row = map[j];
+      for (let i = 0; i < row.length; i++) {
+        const col = PAL[row[i]];
+        if (col) { b.fillStyle = col; b.fillRect(x + i, y + j, 1, 1); }
+      }
+    }
+  }
+  const rect = (x, y, w, h, c) => { b.fillStyle = c; b.fillRect(Math.round(x), Math.round(y), w, h); };
+
+  const DIVER_TOP = [
     "..k..........k..",
     ".kgk........kgk.",
     ".kggk......kggk.",
     ".kgggkkkkkkgggk.",
     "kggggggggggggggk",
-    "kgggwwggggwwgggk",
-    "kggwwwwggwwwwggk",
-    "kgwwbkwwwwbkwwgk",
-    "kgwwkkwwwwkkwwgk",
-    ".kwwwwwkkwwwwwk.",
+    "kkkkkkkkkkkkkkkk",
+    "kllllkggggkllllk",
+    "klwllkwwwwkllwlk",
+    "kkkkkkwwwwkkkkkk",
+    "kgwwwwwkkwwwwwgk",
     ".kwwwwwkkwwwwwk.",
     "..kwwwwwwwwwwk..",
     "..krrrrrrrrrrk..",
-    "...krrrwwrrrk...",
-    "....kkkkkkkk....",
+    ".kgkrrrrrrrrkgk.",
+    "kggkwwwwwwwwkggk",
+    ".kk.kwwwwwwk.kk.",
+    "....kggkkggk....",
   ];
-  const PAL = { k: "#0b0b0b", g: "#7d8590", w: "#f7f7f7", b: "#56b6ff", r: "#C8102E" };
-  function pixelSVG(map) {
-    const h = map.length, w = map[0].length;
-    let rects = "";
-    map.forEach((row, y) => [...row].forEach((c, x) => {
-      if (PAL[c]) rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${PAL[c]}"/>`;
-    }));
-    return `<svg viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${rects}</svg>`;
-  }
-  $("#husky").innerHTML = pixelSVG(HUSKY);
-  // Blocky Boston skyline silhouette
+  const LEGS = [
+    ["....kgk..kgk....", "...krrk..krrk...", "...kkk....kkk..."],
+    ["....kgk..kgk....", "....krrkkrrk....", "....kkk..kkk...."],
+  ];
+  const DIVER_SIT = DIVER_TOP.slice(0, 15);
+  const BOAT = [
+    "............k.......................",
+    "............kRR.....................",
+    "............kRRRR...................",
+    "............kRR.....................",
+    "............k.......................",
+    "........kkkkkkkkkkkkkkkkkkkk........",
+    "........kwwcwwcwwcwwcwwcwwwk........",
+    "........kwwcwwcwwcwwcwwcwwwk........",
+    "...kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...",
+    "...krrrrrrrrrrrrrrrrrrrrrrrrrrrrrk..",
+    "....krrrrrrrrrrrrrrrrrrrrrrrrrrrrk..",
+    "....kwwwwwwwwwwwwwwwwwwwwwwwwwwwk...",
+    ".....krrrrrrrrrrrrrrrrrrrrrrrrrrk...",
+    "......kkkkkkkkkkkkkkkkkkkkkkkkkk....",
+  ];
+  const DUCK = [
+    "..kkk.....",
+    ".kdddk....",
+    ".kdkddkoo.",
+    ".kddddkoo.",
+    "kkdddddk..",
+    "kdddddddk.",
+    "kddddddddk",
+    ".kkkkkkkk.",
+  ];
+
+  // milestones: depth (m), label, draw(x, y)
+  const MILESTONES = [
+    [300, "a very confused duck", (x, y) => drawMap(DUCK, x - 5, y - 4)],
+    [800, "someone's husky card ($4.12 in dining dollars)", (x, y) => { rect(x - 6, y - 4, 12, 8, "#0b0b10"); rect(x - 5, y - 3, 10, 6, "#C8102E"); rect(x - 5, y - 1, 10, 1, "#f4f4f6"); rect(x - 4, y + 1, 3, 1, "#ffd23f"); }],
+    [1400, "a bluebike nobody returned", (x, y) => {
+      const wheel = (cx) => { rect(cx - 2, y, 5, 1, "#0b0b10"); rect(cx - 2, y + 4, 5, 1, "#0b0b10"); rect(cx - 3, y + 1, 1, 3, "#0b0b10"); rect(cx + 3, y + 1, 1, 3, "#0b0b10"); };
+      wheel(x - 5); wheel(x + 5); rect(x - 5, y + 2, 10, 1, "#2a6df4"); rect(x - 1, y - 2, 1, 4, "#2a6df4"); rect(x - 3, y - 2, 3, 1, "#0b0b10"); rect(x + 4, y - 1, 1, 3, "#2a6df4"); rect(x + 3, y - 2, 3, 1, "#0b0b10");
+    }],
+    [2000, "traffic cones from the mass pike", (x, y) => {
+      for (const dx of [-8, 0, 8]) { for (let i = 0; i < 7; i++) rect(x + dx - Math.floor(i / 2), y - 4 + i, 1 + 2 * Math.floor(i / 2), 1, i === 3 ? "#f4f4f6" : "#ff8a1f"); rect(x + dx - 4, y + 3, 9, 1, "#0b0b10"); }
+    }],
+    [2600, "a solo cup from a mission hill darty", (x, y) => { rect(x - 3, y - 4, 7, 1, "#f4f4f6"); for (let i = 0; i < 7; i++) rect(x - 3 + Math.floor(i / 3), y - 3 + i, 7 - 2 * Math.floor(i / 3), 1, "#C8102E"); }],
+    [3200, "a green line car from 1987", (x, y) => {
+      rect(x - 13, y - 5, 26, 10, "#0b0b10"); rect(x - 12, y - 4, 24, 8, "#2e9e4f"); for (let i = 0; i < 5; i++) rect(x - 10 + i * 5, y - 3, 3, 3, "#9fd9ff");
+      rect(x - 12, y + 2, 24, 1, "#f4f4f6"); rect(x - 9, y + 5, 3, 2, "#0b0b10"); rect(x + 6, y + 5, 3, 2, "#0b0b10"); rect(x - 1, y - 7, 2, 2, "#0b0b10");
+    }],
+    [3900, "an extremely fake id (age 21, height 7'2\")", (x, y) => { rect(x - 7, y - 5, 14, 10, "#0b0b10"); rect(x - 6, y - 4, 12, 8, "#bfe3ff"); rect(x - 5, y - 3, 4, 5, "#7a5634"); rect(x, y - 2, 5, 1, "#2a6df4"); rect(x, y, 4, 1, "#2a6df4"); rect(x, y + 2, 3, 1, "#C8102E"); }],
+    [4600, "your rejected co-op applications", (x, y) => { for (let i = 0; i < 4; i++) { rect(x - 6 + i * 2, y - 5 + i, 9, 11, "#0b0b10"); rect(x - 5 + i * 2, y - 4 + i, 7, 9, "#f4f4f6"); } rect(x + 1, y - 1, 1, 1, "#C8102E"); rect(x + 2, y, 1, 1, "#C8102E"); rect(x + 3, y + 1, 1, 1, "#C8102E"); rect(x + 3, y - 1, 1, 1, "#C8102E"); rect(x + 1, y + 1, 1, 1, "#C8102E"); }],
+    [5300, "every umbrella lost on marathon monday", (x, y) => {
+      ["#ff2a4d", "#ffd23f", "#2a6df4"].forEach((c, i) => { const ux = x - 10 + i * 10; rect(ux - 4, y - 2, 9, 1, c); rect(ux - 3, y - 3, 7, 1, c); rect(ux - 1, y - 4, 3, 1, c); rect(ux, y - 1, 1, 5, "#0b0b10"); rect(ux - 1, y + 4, 1, 1, "#0b0b10"); });
+    }],
+    [6000, "a dunkin' iced coffee from 2009 (still cold)", (x, y) => { rect(x - 4, y - 5, 9, 1, "#f4f4f6"); for (let i = 0; i < 10; i++) rect(x - 3 + Math.floor(i / 5), y - 4 + i, 7 - 2 * Math.floor(i / 5), 1, i < 2 ? "#c9e8ff" : "#8a5a2b"); rect(x + 1, y - 9, 1, 5, "#ff7ac8"); rect(x - 2, y, 3, 2, "#c9e8ff"); }],
+    [6600, "the housing lottery algorithm", (x, y) => { rect(x - 8, y - 6, 16, 12, "#0b0b10"); rect(x - 7, y - 5, 14, 10, "#5d6673"); for (let i = 0; i < 3; i++) { rect(x - 6 + i * 4, y - 3, 3, 4, "#f4f4f6"); rect(x - 5 + i * 4, y - 2, 1, 2, i === 1 ? "#C8102E" : "#0b0b10"); } rect(x + 8, y - 4, 1, 5, "#0b0b10"); rect(x + 8, y - 6, 2, 2, "#ff2a4d"); }],
+  ];
+
+  // seeded sea life
+  const LIFE = [];
   (() => {
-    const hs = [6,9,5,11,8,4,12,7,10,6,13,5,8,11,7,9,4,10,6,12,8,5,9,7,11,6,10,8,5,9];
-    let x = 0, out = "";
-    hs.forEach((h, i) => { const w = 3 + (i % 3) * 2; out += `<rect x="${x}" y="${13 - h}" width="${w}" height="${h}" fill="#0b1a2a"/>`; x += w; });
-    $("#skyline").innerHTML = out;
+    const rnd = mulberry32(1898);
+    for (let i = 0; i < 90; i++) {
+      const depth = 60 + rnd() * 6900;
+      const kind = depth < 2600 ? "fish" : depth < 5000 ? (rnd() < .5 ? "jelly" : "fish") : (rnd() < .45 ? "angler" : "jelly");
+      const colors = depth < 1500 ? ["#c9d3dd", "#ffb347", "#8fd694"] : depth < 3500 ? ["#7fb2d9", "#d98fa0", "#9fd9ff"] : ["#5a6b8c", "#7a5ea8", "#3f7f9a"];
+      const school = kind === "fish" && rnd() < .4 ? 3 + Math.floor(rnd() * 4) : 1;
+      const x0 = rnd() * 400, dir = rnd() < .5 ? -1 : 1, speed = kind === "jelly" ? 2 : 5 + rnd() * 9, color = colors[Math.floor(rnd() * colors.length)];
+      for (let s = 0; s < school; s++) LIFE.push({ kind, y: depth * PX_PER_M + 14 + (s % 2) * 3 + s, x: x0 + s * 7, dir, speed, color, phase: rnd() * 6.28 });
+    }
   })();
+  let snow = [];
+  function initSnow() {
+    const rnd = mulberry32(7);
+    snow = Array.from({ length: Math.round(W * H / 380) }, () => ({ x: rnd() * W, y: rnd() * 4000, z: .3 + rnd() * .9, drift: rnd() * 6.28 }));
+  }
+  const CLOUDS = [[0.08, 0.55, 3], [0.36, 0.72, 2], [0.62, 0.5, 4], [0.86, 0.66, 2], [1.1, 0.6, 3]];
 
-  // ---------- Scene ----------
-  let shownDepth = 0;
-  function lerpColor(a, b, t) {
-    const pa = a.match(/\w\w/g).map((h) => parseInt(h, 16)), pb = b.match(/\w\w/g).map((h) => parseInt(h, 16));
-    return "#" + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, "0")).join("");
-  }
-  function setDepth(depth, animate = true) {
-    const t = Math.min(1, depth / MAX_DEPTH);
-    $("#scene").style.backgroundColor = t < .5 ? lerpColor("4f8fc0", "1b4a6b", t * 2) : lerpColor("1b4a6b", "060d14", (t - .5) * 2);
-    $("#surface").style.opacity = Math.max(0, .7 - t * 3);
-    $("#skyline").style.opacity = Math.max(0, .25 - t * 2);
-    $("#gaugeFill").style.height = (t * 100) + "%";
-    let ms = MILESTONES[0][1];
-    for (const [d, label] of MILESTONES) if (depth >= d) ms = label;
-    $("#milestone").innerHTML = `<b>NOW PASSING</b>${esc(ms)}`;
-    const from = shownDepth, to = depth;
-    shownDepth = depth;
-    if (!animate || from === to) { paintDepth(to); return; }
-    const start = performance.now(), dur = 1200;
-    (function step(now) {
-      const p = Math.min(1, (now - start) / dur);
-      paintDepth(Math.round(from + (to - from) * p / 10) * 10);
-      if (p < 1) requestAnimationFrame(step);
-    })(start);
-    for (let i = 0; i < 6; i++) setTimeout(spawnBubble, i * 120);
-  }
-  function paintDepth(d) {
-    $("#hudDepth").textContent = fmt(d) + "m";
-    $("#sceneDepth").textContent = fmt(d) + " m";
-  }
-  function spawnBubble() {
-    const b = document.createElement("div");
-    b.className = "bubble";
-    b.style.left = (40 + Math.random() * 20) + "%";
-    b.style.top = (110 + Math.random() * 40) + "px";
-    const s = [6, 8, 10][Math.floor(Math.random() * 3)];
-    b.style.width = b.style.height = s + "px";
-    $("#scene").appendChild(b);
-    setTimeout(() => b.remove(), 2500);
-  }
-  setInterval(() => { if (!document.hidden) spawnBubble(); }, 1100);
+  const depthToY = (m) => 16 + m * PX_PER_M;
+  const cam = { y: 0, target: 0 };
+  const diver = { x: 0, y: 0, ty: 0, tx: 0, mode: "boat", jumpT: 0, jx0: 0, jy0: 0, frame: 0 };
+  let bubbles = [], bursts = [], splash = [];
+  let worldT = 0;
 
-  // ---------- State ----------
-  let daily = null;   // { date, dayNumber, prompts, msUntilReset }
-  let save = null;    // per-day progress
-  let timerId = null;
+  function waterColor(y) {
+    const stops = [[0, [52, 140, 160]], [80, [32, 104, 132]], [300, [22, 70, 104]], [600, [14, 44, 78]], [900, [9, 26, 52]], [1100, [5, 12, 26]]];
+    const yq = Math.floor(y / 5) * 5;
+    for (let i = 1; i < stops.length; i++) {
+      if (yq <= stops[i][0]) {
+        const [y0, c0] = stops[i - 1], [y1, c1] = stops[i];
+        const t = (yq - y0) / (y1 - y0);
+        return `rgb(${c0.map((v, k) => Math.round(v + (c1[k] - v) * t)).join(",")})`;
+      }
+    }
+    return "rgb(5,12,26)";
+  }
+  function skyColor(frac) {
+    const top = [104, 178, 232], bot = [214, 236, 246];
+    const t = Math.min(1, Math.max(0, Math.floor(frac * 12) / 12));
+    return `rgb(${top.map((v, k) => Math.round(v + (bot[k] - v) * t)).join(",")})`;
+  }
+
+  function drawWorld(dt) {
+    worldT += dt;
+    const cy = Math.round(cam.y);
+    for (let sy = 0; sy < H; sy++) {
+      const wy = cy + sy;
+      b.fillStyle = wy < 0 ? skyColor((wy + H * 0.62) / (H * 0.62)) : waterColor(wy);
+      b.fillRect(0, sy, W, 1);
+    }
+    if (cy < 0) {
+      const sx = Math.round(W * 0.84), syy = Math.round(-H * 0.5) - cy;
+      b.fillStyle = "rgba(255,230,150,.35)"; b.fillRect(sx - 12, syy - 12, 24, 24);
+      b.fillStyle = "#ffe08a"; b.fillRect(sx - 8, syy - 7, 16, 14); b.fillRect(sx - 7, syy - 8, 14, 16);
+      for (const [fx, fy, sz] of CLOUDS) {
+        const x = Math.round(((fx * W + worldT * 2.5 * sz) % (W + 80)) - 40), y = Math.round(-H * fy) - cy;
+        b.fillStyle = "#ffffff";
+        b.fillRect(x, y, 10 * sz, 3 * sz); b.fillRect(x + 2 * sz, y - 2 * sz, 5 * sz, 2 * sz); b.fillRect(x + 6 * sz, y - sz, 3 * sz, sz);
+        b.fillStyle = "#dfeef8"; b.fillRect(x, y + 3 * sz - 1, 10 * sz, 1);
+      }
+      const base = -cy;
+      b.fillStyle = "#7f9fb8";
+      const blocks = [[0.02, 9, 10], [0.08, 14, 8], [0.13, 7, 12], [0.2, 18, 9], [0.27, 11, 14], [0.36, 8, 10], [0.44, 22, 7], [0.5, 12, 11], [0.58, 9, 9], [0.7, 15, 12], [0.8, 10, 9], [0.88, 13, 10], [0.94, 8, 12]];
+      for (const [fx, hh, ww] of blocks) b.fillRect(Math.round(fx * W), base - hh - 3, ww, hh);
+      b.fillStyle = "#6f8ea8"; b.fillRect(Math.round(W * 0.62), base - 40, 11, 37); b.fillRect(Math.round(W * 0.62) + 5, base - 46, 1, 6);
+      b.fillStyle = "#88b3d6"; b.fillRect(Math.round(W * 0.665), base - 46, 8, 43); b.fillStyle = "#a7cbe6"; b.fillRect(Math.round(W * 0.665), base - 46, 2, 43);
+      b.fillStyle = "#4f8a4a"; b.fillRect(0, base - 3, W, 3);
+    }
+    if (cy < 80 && cy > -H) {
+      const sy = -cy;
+      for (let x = 0; x < W; x++) {
+        const o = Math.round(Math.sin(x * 0.22 + worldT * 2));
+        b.fillStyle = "#bfe7f2"; b.fillRect(x, sy + o, 1, 1);
+        if ((x + Math.floor(worldT * 6)) % 9 === 0) { b.fillStyle = "#ffffff"; b.fillRect(x, sy + o - 1, 2, 1); }
+      }
+      b.fillStyle = "rgba(255,255,255,.05)";
+      for (let i = 0; i < 6; i++) {
+        const rx = ((i * 61 + worldT * 3) % (W + 60)) - 30;
+        for (let k = 0; k < 70; k++) b.fillRect(Math.round(rx + k * 0.5), sy + 2 + k, 6, 1);
+      }
+    }
+    const boatX = Math.round(W / 2 - 18), boatY = -12 - cy + Math.round(Math.sin(worldT * 1.6));
+    if (boatY > -20 && boatY < H) drawMap(BOAT, boatX, boatY);
+    for (const p of snow) {
+      const sy = Math.floor(((p.y - cy * p.z) % H + H) % H);
+      if (cy + sy < 4) continue;
+      b.fillStyle = `rgba(220,235,255,${0.1 + p.z * 0.25})`;
+      b.fillRect(Math.round(p.x + Math.sin(worldT * .6 + p.drift) * 2), sy, p.z > .9 ? 2 : 1, 1);
+    }
+    MILESTONES.forEach(([m, , draw], i) => {
+      const y = Math.round(depthToY(m) - cy + Math.sin(worldT * 1.2 + i) * 1.5);
+      if (y < -20 || y > H + 20) return;
+      draw(Math.round(i % 2 ? W * 0.73 : W * 0.27), y);
+    });
+    for (const f of LIFE) {
+      f.x += f.dir * f.speed * dt;
+      if (f.x > W + 30) f.x = -30; if (f.x < -30) f.x = W + 30;
+      const y = Math.round(f.y - cy + Math.sin(worldT + f.phase) * (f.kind === "jelly" ? 3 : 1));
+      if (y < -12 || y > H + 12) continue;
+      const x = Math.round(f.x);
+      if (f.kind === "fish") {
+        rect(x, y, 5, 3, f.color);
+        const tail = f.dir > 0 ? x - 2 : x + 5;
+        rect(tail, y - 1, 2, 1, f.color); rect(tail, y + 3, 2, 1, f.color); rect(f.dir > 0 ? x - 1 : x + 5, y, 1, 3, f.color);
+        rect(f.dir > 0 ? x + 3 : x + 1, y, 1, 1, "#0b0b10");
+      } else if (f.kind === "jelly") {
+        rect(x, y, 6, 2, f.color); rect(x + 1, y - 1, 4, 1, f.color);
+        b.fillStyle = "rgba(255,180,230,.5)";
+        for (let k = 0; k < 3; k++) b.fillRect(x + 1 + k * 2, y + 2, 1, 3 + Math.round(Math.sin(worldT * 3 + k + f.phase)));
+      } else {
+        rect(x, y, 9, 5, "#1a2233"); rect(x + (f.dir > 0 ? 6 : 2), y + 1, 1, 1, "#f4f4f6");
+        rect(x + (f.dir > 0 ? 7 : 0), y + 3, 2, 1, "#f4f4f6");
+        const lx = x + (f.dir > 0 ? 9 : -1);
+        rect(lx, y - 3, 1, 3, "#3a4458");
+        b.fillStyle = `rgba(255,240,140,${0.2 + 0.1 * Math.sin(worldT * 4 + f.phase)})`; b.fillRect(lx - 2, y - 6, 5, 5);
+        rect(lx, y - 4, 1, 1, "#fff2a0");
+      }
+    }
+    const fy = Math.round(depthToY(MAX_DEPTH) + 30 - cy);
+    if (fy < H + 10) {
+      b.fillStyle = "#2a2416"; b.fillRect(0, fy, W, H);
+      for (let x = 0; x < W; x += 3) { b.fillStyle = (x / 3) % 2 ? "#3a3120" : "#30291a"; b.fillRect(x, fy - ((x * 7) % 3), 3, 3); }
+      for (let i = 0; i < 9; i++) {
+        const kx = Math.round((i + 0.5) * W / 9);
+        for (let k = 0; k < 14; k++) { b.fillStyle = k % 2 ? "#2f6b3a" : "#3c8a4a"; b.fillRect(kx + Math.round(Math.sin(worldT * 1.5 + k * 0.4 + i) * 1.5), fy - k, 1, 1); }
+      }
+      const cx = Math.round(W / 2 - 7);
+      rect(cx, fy - 9, 15, 9, "#0b0b10"); rect(cx + 1, fy - 8, 13, 7, "#7a5634"); rect(cx + 1, fy - 6, 13, 1, "#ffd23f"); rect(cx + 6, fy - 7, 3, 3, "#ffd23f");
+      b.fillStyle = `rgba(255,42,77,${0.25 + 0.15 * Math.sin(worldT * 3)})`; b.fillRect(cx + 2, fy - 18, 11, 9);
+      rect(cx + 6, fy - 16, 3, 1, "#ff2a4d"); rect(cx + 5, fy - 15, 5, 2, "#ff2a4d"); rect(cx + 6, fy - 13, 3, 1, "#ff2a4d"); rect(cx + 7, fy - 12, 1, 1, "#ff2a4d"); rect(cx + 6, fy - 15, 1, 1, "#ffd0d8");
+    }
+    const moving = Math.abs(diver.ty - diver.y) > 1 || diver.mode === "jump";
+    diver.frame += dt * (moving ? 8 : 2.5);
+    const dx = Math.round(diver.x - 8), dyy = Math.round(diver.y - cy);
+    if (diver.mode === "boat") {
+      drawMap(DIVER_SIT, dx, dyy - 15 + Math.round(Math.sin(worldT * 1.6)));
+    } else {
+      const bob = diver.mode === "swim" && !moving ? Math.round(Math.sin(worldT * 2) * 1.5) : 0;
+      drawMap(DIVER_TOP, dx, dyy - 10 + bob);
+      drawMap(LEGS[Math.floor(diver.frame) % 2], dx, dyy + 7 + bob);
+    }
+    if (diver.mode === "swim" && Math.random() < (moving ? 0.6 : 0.05)) bubbles.push({ x: diver.x + 6 + Math.random() * 3, y: diver.y - 4, vy: -(10 + Math.random() * 10), s: Math.random() < .3 ? 2 : 1, ph: Math.random() * 6 });
+    bubbles = bubbles.filter((p) => { p.y += p.vy * dt; p.ph += dt * 6; return p.y > 2 && p.y > diver.y - 160; });
+    for (const p of bubbles) { b.fillStyle = "rgba(220,245,255,.8)"; b.fillRect(Math.round(p.x + Math.sin(p.ph)), Math.round(p.y - cy), p.s, p.s); }
+    for (const arr of [splash, bursts]) for (const p of arr) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; p.life -= dt; }
+    splash = splash.filter((p) => p.life > 0); bursts = bursts.filter((p) => p.life > 0);
+    for (const p of splash) { b.fillStyle = "#e9f8ff"; b.fillRect(Math.round(p.x), Math.round(p.y - cy), 1, 1); }
+    for (const p of bursts) { b.globalAlpha = Math.min(1, p.life * 1.5); b.fillStyle = p.c; b.fillRect(Math.round(p.x), Math.round(p.y - cy), p.s, p.s); b.globalAlpha = 1; }
+  }
+
+  function drawOverlay() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(buf, 0, 0, W * S * DPR, H * S * DPR);
+    const cy = cam.y, px = S * DPR;
+    ctx.textBaseline = "top"; ctx.textAlign = "center";
+    MILESTONES.forEach(([m, label], i) => {
+      const y = (depthToY(m) - cy + 9) * px;
+      if (y < -40 || y > cv.height + 40) return;
+      let x = (i % 2 ? W * 0.73 : W * 0.27) * px;
+      ctx.font = `${Math.round(19 * DPR)}px VT323`;
+      const half = ctx.measureText(label.toUpperCase()).width / 2 + 10 * DPR;
+      x = Math.max(half, Math.min(cv.width - half - 40 * DPR, x));
+      ctx.fillStyle = "rgba(240,236,244,.85)";
+      ctx.fillText(label.toUpperCase(), x, y + 15 * DPR);
+      ctx.font = `${Math.round(14 * DPR)}px VT323`; ctx.fillStyle = "rgba(255,120,145,.8)";
+      ctx.fillText(`▼ ${fmt(m)} M`, x, y);
+    });
+    const fy = (depthToY(MAX_DEPTH) + 34 - cy) * px;
+    if (fy < cv.height + 40) { ctx.font = `${Math.round(20 * DPR)}px VT323`; ctx.fillStyle = "rgba(255,90,115,.9)"; ctx.fillText("7,000 M · THE BOTTOM OF THE CHARLES", cv.width / 2, fy); }
+    if (cy > -H * 0.3) {
+      const rx = cv.width - 14 * DPR;
+      ctx.textAlign = "right"; ctx.font = `${Math.round(15 * DPR)}px VT323`;
+      const m0 = Math.max(0, Math.floor(((cy - 16) / PX_PER_M) / 100) * 100);
+      for (let m = m0; m <= MAX_DEPTH; m += 100) {
+        const y = (depthToY(m) - cy) * px;
+        if (y > cv.height) break;
+        if (y < 0) continue;
+        const big = m % 1000 === 0, mid = m % 500 === 0;
+        ctx.fillStyle = big ? "rgba(255,255,255,.55)" : "rgba(255,255,255,.25)";
+        const len = (big ? 16 : mid ? 10 : 5) * DPR;
+        ctx.fillRect(rx - len, y, len, Math.max(1, DPR));
+        if (big) ctx.fillText(`${fmt(m)}M`, rx - len - 6 * DPR, y - 8 * DPR);
+      }
+      if (diver.mode === "swim") {
+        const y = (diver.y - cy) * px;
+        ctx.fillStyle = "#ff2a4d";
+        ctx.beginPath(); ctx.moveTo(rx - 24 * DPR, y); ctx.lineTo(rx - 34 * DPR, y - 6 * DPR); ctx.lineTo(rx - 34 * DPR, y + 6 * DPR); ctx.fill();
+      }
+    }
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (diver.mode === "jump") {
+      diver.jumpT += dt / 0.9;
+      const t = Math.min(1, diver.jumpT);
+      diver.x = diver.jx0 + (diver.tx - diver.jx0) * t;
+      diver.y = diver.jy0 + (22 - diver.jy0) * t - Math.sin(t * Math.PI) * 26;
+      if (t >= 1) {
+        diver.mode = "swim"; diver.y = 22;
+        for (let i = 0; i < 26; i++) splash.push({ x: diver.x + (Math.random() - .5) * 10, y: 0, vx: (Math.random() - .5) * 40, vy: -20 - Math.random() * 40, g: 90, life: .9 });
+        sfx.splash();
+      }
+    } else if (diver.mode === "swim") {
+      diver.y += (diver.ty - diver.y) * (1 - Math.exp(-dt * 1.4));
+      diver.x += (diver.tx - diver.x) * (1 - Math.exp(-dt * 2));
+    }
+    if (diver.mode !== "boat") cam.target = diver.y - H * (isDesktop() ? 0.26 : 0.2);
+    cam.y += (cam.target - cam.y) * (1 - Math.exp(-dt * (diver.mode === "jump" ? 2.5 : 1.8)));
+    drawWorld(dt);
+    drawOverlay();
+    tickTimer();
+    requestAnimationFrame(frame);
+  }
+
+  function setDiveDepth(m, instant = false) {
+    diver.ty = depthToY(m) + 6;
+    if (instant) { diver.y = diver.ty; cam.y = cam.target = diver.y - H * (isDesktop() ? 0.26 : 0.2); }
+    $("#hudDepth").textContent = fmt(m);
+  }
+  function placeDiverX() { diver.tx = (phase === "done" && innerWidth >= 1200) ? W * 0.3 : W / 2; }
+  function burst(tier) {
+    const c = TIERS[tier]?.color || "#fff";
+    const n = tier === "huskrillion" ? 90 : 18 + TIER_RANK[tier] * 8;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, sp = 20 + Math.random() * (tier === "huskrillion" ? 70 : 40);
+      bursts.push({ x: diver.x, y: diver.y - 2, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: 10, life: 1 + Math.random(), c: Math.random() < .25 ? "#ffffff" : c, s: Math.random() < .3 ? 2 : 1 });
+    }
+  }
+
+  // ================= Game state =================
+  let daily = null, save = null, phase = "loading";
+  let deadline = 0, remaining = SECONDS * 1000, timerOn = false, judging = false, lastSecShown = -1;
   let resetAt = 0;
-
   const saveKey = () => `huskrillion:${daily.date}`;
   const persist = () => store.set(saveKey(), save);
-  const totalPoints = () => save.results.reduce((s, r) => s + r.points, 0);
+  const total = () => save.results.reduce((s, r) => s + (r?.points || 0), 0);
+  const rankFor = (m) => { let t = RANKS[0][1]; for (const [d, l] of RANKS) if (m >= d) t = l; return t; };
+
+  function show(id) {
+    for (const s of ["#title", "#stage", "#done"]) $(s).hidden = s !== id;
+    const inGame = id !== "#title";
+    $("#hud").hidden = !inGame;
+    $("#log").hidden = !inGame;
+    $("#wordmark").classList.toggle("on", inGame);
+  }
+
+  function renderLog() {
+    $("#log").innerHTML = save.prompts.map((p, i) => {
+      const r = save.results[i];
+      const t = r ? TIERS[r.tier] : null;
+      const now = !r && i === save.results.length && phase !== "done";
+      return `<div class="slot${now ? " now" : ""}"><span>${String(i + 1).padStart(2, "0")}</span><span class="sq" style="${t ? `background:${t.color}` : ""}"></span><span>${t ? esc(t.label) : now ? "diving…" : "—"}</span><span class="pts">${r ? "+" + r.points : ""}</span></div>`;
+    }).join("");
+    $("#hudPrompt").textContent = `${Math.min(save.results.length + (save.done ? 0 : 1), 7)}/7`;
+  }
 
   async function boot() {
-    main.innerHTML = `<div class="card"><div class="eyebrow">LOADING</div><div class="prompt-text loading-dots">Filling the Charles</div></div>`;
+    resize();
+    diver.mode = "boat"; diver.x = W / 2 + 4; diver.y = -2;
+    cam.y = cam.target = -H * 0.58;
+    requestAnimationFrame(frame);
     try {
       const r = await fetch("/api/daily", { cache: "no-store" });
-      if (!r.ok) throw new Error("bad response");
+      if (!r.ok) throw new Error();
       daily = await r.json();
     } catch {
-      main.innerHTML = `<div class="card"><div class="eyebrow">UH OH</div><div class="prompt-text">Couldn't reach the river.</div><button class="btn block" onclick="location.reload()">Try again</button></div>`;
+      show("#stage");
+      $("#stage").innerHTML = `<div class="panel"><div class="eyebrow">uh oh</div><div class="prompt">couldn't reach the river.</div><div class="actions"><button class="btn small" onclick="location.reload()">try again</button></div></div>`;
       return;
     }
     resetAt = Date.now() + daily.msUntilReset;
     $("#hudDive").textContent = "#" + daily.dayNumber;
     save = store.get(saveKey()) || { date: daily.date, dayNumber: daily.dayNumber, prompts: daily.prompts, results: [], inProgress: null, done: false };
-    // Refreshing mid-prompt counts as running out of time (no rerolls!).
     if (save.inProgress !== null && save.results.length === save.inProgress) {
       const p = save.prompts[save.inProgress];
       save.results.push({ promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0 });
       save.inProgress = null;
+      if (save.results.length >= 7) { save.done = true; recordStats(); }
       persist();
     }
-    shownDepth = totalPoints() * 10;
-    setDepth(shownDepth, false);
-    updatePromptHud();
-    if (save.done) return showResults();
-    if (save.results.length > 0) return showPrompt(save.results.length);
-    if (!store.get("huskrillion:seenHelp")) { store.set("huskrillion:seenHelp", true); openHelp(); }
-    showIntro();
+    const stats = store.get("hk:stats", { played: 0, best: 0, streak: 0, lastDay: 0 });
+    const streak = stats.lastDay >= daily.dayNumber - 1 ? stats.streak : 0;
+    $("#metaDive").textContent = `dive #${daily.dayNumber} · streak ${streak}`;
+    $("#metaBest").textContent = stats.best ? `best ▼ ${fmt(stats.best)} m` : "";
+
+    if (save.done) { enterWater(); return showDone(); }
+    if (save.results.length > 0) { enterWater(); return showResume(); }
+    phase = "title";
+    show("#title");
   }
 
-  function updatePromptHud() {
-    const n = Math.min(save.results.length + (save.done ? 0 : 1), save.prompts.length);
-    $("#hudPrompt").textContent = `${n}/${save.prompts.length}`;
+  function enterWater() {
+    diver.mode = "swim"; diver.x = diver.tx = W / 2;
+    setDiveDepth(total() * 10, true);
   }
 
-  // ---------- Screens ----------
-  function showIntro() {
-    const d = new Date(daily.date + "T12:00:00");
-    const nice = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-    main.innerHTML = `
-      <div class="card">
-        <div class="eyebrow">DIVE #${daily.dayNumber} · ${esc(nice.toUpperCase())}</div>
-        <div class="prompt-text">7 prompts. 25 seconds each. Obvious answers float. Rare answers sink you deep.</div>
-        <div class="hint">Every prompt has tons of right answers. Name the one nobody else will, and dive toward 7,000 m.</div>
-        <button class="btn block" id="startBtn">Start the dive ↓</button>
-        <button class="btn ghost block" id="howBtn">How to play</button>
-      </div>`;
-    $("#startBtn").onclick = () => showPrompt(0);
-    $("#howBtn").onclick = openHelp;
+  function begin() {
+    if (phase !== "title") return;
+    phase = "diving";
+    $("#title").hidden = true;
+    diver.mode = "jump"; diver.jumpT = 0; diver.jx0 = diver.x; diver.jy0 = diver.y - 12; diver.tx = W / 2;
+    diver.ty = depthToY(0) + 6;
+    setTimeout(() => { show("#stage"); startPrompt(0); }, 1500);
   }
 
-  function showPrompt(i) {
+  function showResume() {
+    phase = "resume";
+    show("#stage"); renderLog();
+    $("#stage").innerHTML = `<div class="panel"><div class="eyebrow">dive #${daily.dayNumber} · in progress</div><div class="prompt">you're ${fmt(total() * 10)} m down. prompt ${save.results.length + 1} of 7 is waiting.</div><div class="actions"><span class="kbd">enter ↵</span><button class="btn small" id="resumeBtn">resume dive ▼</button></div></div>`;
+    $("#resumeBtn").onclick = () => startPrompt(save.results.length);
+  }
+
+  function startPrompt(i) {
+    phase = "play";
     const p = save.prompts[i];
     save.inProgress = i; persist();
-    updatePromptHud();
-    main.innerHTML = `
-      <div class="card" id="promptCard">
-        <div class="eyebrow">PROMPT ${i + 1} OF ${save.prompts.length}</div>
-        <p class="prompt-text">${esc(p.text)}</p>
+    renderLog();
+    $("#stage").innerHTML = `
+      <div class="panel" id="pp">
+        <div class="row"><span class="eyebrow">prompt ${i + 1} / 7</span><span class="secs" id="secs">25</span></div>
+        <div class="prompt">${esc(p.text)}</div>
         <div class="timer" id="timer">${"<i></i>".repeat(SECONDS)}</div>
-        <form class="row" id="answerForm" autocomplete="off">
-          <input type="text" id="answer" maxlength="60" placeholder="Your rarest answer…" aria-label="Your answer" autocapitalize="off" spellcheck="false" />
-          <button class="btn" type="submit">Dive</button>
+        <form class="answer-row" id="af" autocomplete="off">
+          <input id="ans" maxlength="60" placeholder="your answer" aria-label="Your answer" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          <button class="btn small" type="submit">dive ▼</button>
         </form>
-        <div class="hint">One answer. No do-overs. Think like a fifth-year.</div>
+        <div class="feedback" id="fb" aria-live="polite">not accepted? keep trying until the clock runs out.</div>
       </div>`;
-    const input = $("#answer");
+    const input = $("#ans");
+    input.addEventListener("input", () => sfx.key());
     setTimeout(() => input.focus(), 30);
-    const deadline = Date.now() + SECONDS * 1000;
-    const cells = [...document.querySelectorAll("#timer i")];
-    clearInterval(timerId);
-    timerId = setInterval(() => {
-      const left = Math.max(0, deadline - Date.now());
-      const secs = Math.ceil(left / 1000);
-      cells.forEach((c, idx) => c.classList.toggle("off", idx >= secs));
-      $("#timer").classList.toggle("hurry", secs <= 5);
-      if (left <= 0) { clearInterval(timerId); submit(i, input.value, true); }
-    }, 100);
-    $("#answerForm").onsubmit = (e) => {
-      e.preventDefault();
-      if (!input.value.trim()) { $("#promptCard").classList.remove("shake"); void $("#promptCard").offsetWidth; $("#promptCard").classList.add("shake"); return; }
-      clearInterval(timerId);
-      submit(i, input.value, false);
-    };
+    remaining = SECONDS * 1000; deadline = Date.now() + remaining; timerOn = true; judging = false; lastSecShown = -1;
+    $("#af").onsubmit = (e) => { e.preventDefault(); attempt(false); };
   }
 
-  async function submit(i, raw, timedOut) {
-    const p = save.prompts[i];
-    const answer = raw.trim();
-    if (!answer) return record(i, { promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0 });
-    const line = JUDGING_LINES[Math.floor(Math.random() * JUDGING_LINES.length)];
-    main.innerHTML = `
-      <div class="card">
-        <div class="eyebrow">${timedOut ? "TIME! SUBMITTING WHAT YOU HAD" : "JUDGING"}</div>
-        <p class="prompt-text">“${esc(answer)}”</p>
-        <div class="hint loading-dots">${esc(line)}</div>
-      </div>`;
-    try {
-      const r = await fetch("/api/judge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ promptId: p.id, answer }),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data.error || "The judge fell into the Charles.");
-      record(i, {
-        promptId: p.id, text: p.text, answer, canonical: data.canonical,
-        tier: data.tier, points: data.points, quip: data.quip,
-        commonAnswers: data.commonAnswers || [], share: data.share,
-      });
-    } catch (e) {
-      main.innerHTML = `
-        <div class="card">
-          <div class="eyebrow">JUDGE ERROR</div>
-          <p class="prompt-text">${esc(e.message || "Something broke.")}</p>
-          <div class="hint">Your timer is paused. Retry and the same answer gets judged.</div>
-          <button class="btn block" id="retryBtn">Retry</button>
-          <button class="btn ghost block" id="skipBtn">Skip this prompt (0 pts)</button>
-        </div>`;
-      $("#retryBtn").onclick = () => submit(i, answer, false);
-      $("#skipBtn").onclick = () => record(i, { promptId: p.id, text: p.text, answer, tier: "missed", points: 0 });
+  function tickTimer() {
+    if (phase !== "play" || !timerOn) return;
+    const left = judging ? remaining : Math.max(0, deadline - Date.now());
+    const secs = Math.ceil(left / 1000);
+    document.querySelectorAll("#timer i").forEach((c, idx) => c.classList.toggle("off", idx >= secs));
+    $("#timer")?.classList.toggle("paused", judging);
+    const el = $("#secs");
+    if (el && secs !== lastSecShown) {
+      el.textContent = secs; el.classList.toggle("hurry", secs <= 5);
+      if (secs <= 5 && secs > 0 && !judging) sfx.tick();
+      lastSecShown = secs;
     }
+    if (!judging && left <= 0) { timerOn = false; attempt(true); }
   }
 
-  function record(i, result) {
+  function shake() { const pp = $("#pp"); if (!pp) return; pp.classList.remove("shake"); void pp.offsetWidth; pp.classList.add("shake"); }
+
+  async function attempt(final) {
+    if (judging || phase !== "play") return;
+    const i = save.results.length;
+    const p = save.prompts[i];
+    const input = $("#ans");
+    const answer = (input?.value || "").trim();
+    if (!answer) {
+      if (final) return finish(i, { promptId: p.id, text: p.text, answer: "", tier: "missed", points: 0 }, null);
+      return shake();
+    }
+    judging = true;
+    remaining = final ? 0 : Math.max(0, deadline - Date.now());
+    input.disabled = true;
+    sfx.submit();
+    const fb = $("#fb");
+    fb.className = "feedback"; fb.innerHTML = `<span class="dots">${esc(JUDGING[Math.floor(Math.random() * JUDGING.length)])}</span>`;
+    try {
+      const r = await fetch("/api/judge", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ promptId: p.id, answer, final: final || remaining <= 0 }) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || "the judge fell into the charles.");
+      if (data.valid) {
+        return finish(i, { promptId: p.id, text: p.text, answer, canonical: data.canonical, tier: data.tier, points: data.points, quip: data.quip, share: data.share }, data);
+      }
+      if (final || remaining <= 0) {
+        return finish(i, { promptId: p.id, text: p.text, answer: "", tried: answer, tier: "missed", points: 0, quip: data.quip }, data);
+      }
+      sfx.bad();
+      fb.className = "feedback bad";
+      fb.innerHTML = `<span class="x">✕ not accepted</span> · ${esc(data.quip || "that doesn't count.")}`;
+      shake();
+      input.value = "";
+    } catch (e) {
+      if (final) return finish(i, { promptId: p.id, text: p.text, answer: "", tried: answer, tier: "missed", points: 0 }, null);
+      fb.className = "feedback bad";
+      fb.innerHTML = `<span class="x">✕</span> ${esc(e.message)} · try again`;
+    }
+    judging = false;
+    deadline = Date.now() + remaining;
+    input.disabled = false; input.focus();
+  }
+
+  function finish(i, result, data) {
+    timerOn = false; judging = false;
     save.results[i] = result;
     save.inProgress = null;
-    if (save.results.length >= save.prompts.length) save.done = true;
+    if (save.results.length >= 7) save.done = true;
     persist();
-    if (save.done) updateStats();
-    showReveal(i);
+    if (save.done) recordStats();
+    showReveal(i, data);
   }
 
-  function showReveal(i) {
+  function showReveal(i, data) {
+    phase = "reveal";
     const r = save.results[i];
-    const t = TIERS[r.tier] || TIERS.waitlisted;
-    const last = i === save.prompts.length - 1;
-    setDepth(totalPoints() * 10, true);
-    const common = (r.commonAnswers || []).filter(Boolean);
-    main.innerHTML = `
-      <div class="card">
-        <div class="eyebrow">PROMPT ${i + 1} RESULT</div>
-        <div class="hint" style="margin:0 0 10px">${esc(r.text)}</div>
-        <div class="tier-badge" style="background:${t.color};${r.tier === "huskrillion" ? "color:#fff" : ""}">${esc(t.label.toUpperCase())}</div>
-        <div class="answer-line">${r.answer ? "“" + esc(r.canonical || r.answer) + "”" : "<i>(no answer)</i>"}</div>
-        <div class="pts" style="color:${r.points ? "var(--red)" : "#777"}">+${r.points} PTS · +${fmt(r.points * 10)} M</div>
-        ${r.quip ? `<div class="quip">${esc(r.quip)}</div>` : `<div class="quip">${esc(t.desc)}</div>`}
-        ${r.share != null ? `<div class="common">${r.share}% of divers said this today.</div>` : ""}
-        ${common.length ? `<div class="common"><b>WHAT THE TOUR GROUP SAID</b>${common.map(esc).join(" · ")}</div>` : ""}
-        <button class="btn block" id="nextBtn">${last ? "Surface for results ↑" : "Next prompt ↓"}</button>
+    const t = TIERS[r.tier] || TIERS.missed;
+    const last = i === 6;
+    renderLog();
+    setDiveDepth(total() * 10);
+    if (r.points) { burst(r.tier); sfx.sink(); setTimeout(() => sfx.tier(TIER_RANK[r.tier]), 150); } else sfx.bad();
+    const gem = data?.gem, crowd = data?.commonAnswers || [];
+    const quip = r.tier === "huskrillion" && !r.quip ? "you found the designated gem. paws is weeping." : (r.quip || t.desc);
+    const yours = r.answer ? esc(r.canonical || r.answer) : r.tried ? `<s>${esc(r.tried)}</s>` : "—";
+    $("#stage").innerHTML = `
+      <div class="panel">
+        <div class="row"><span class="eyebrow">prompt ${i + 1} / 7<span class="pt"> · ${esc(r.text)}</span></span></div>
+        <div class="tier-name" style="color:${t.color};text-shadow:0 0 18px ${t.color}88, 3px 3px 0 #000">${esc(t.label)}</div>
+        <div class="tier-desc d">${esc(t.desc)}</div>
+        <div class="gain" style="color:${r.points ? t.color : "#8a7d88"}">+${r.points} · ▼ ${fmt(r.points * 10)} M</div>
+        <div class="your"><span>${r.tried && !r.answer ? "last try" : "your answer"}</span>${yours}</div>
+        <div class="quip">${esc(quip)}</div>
+        ${r.share != null ? `<div class="tier-desc">${r.share}% of divers said this today.</div>` : ""}
+        ${gem ? `<div class="reveal-grid"><div><b>◆ the gem</b><span class="gem">${esc(gem)}</span></div><div><b>the crowd said</b>${crowd.map(esc).join(" · ")}</div></div>` : ""}
+        <div class="actions"><span class="kbd">enter ↵</span><button class="btn small" id="nextBtn">${last ? "see dive log ▸" : "next prompt ▼"}</button></div>
       </div>`;
-    $("#nextBtn").onclick = () => (last ? showResults() : showPrompt(i + 1));
-    $("#nextBtn").focus();
+    $("#nextBtn").onclick = () => (last ? showDone() : startPrompt(i + 1));
+    setTimeout(() => $("#nextBtn")?.focus(), 50);
   }
 
-  function rankFor(depth) {
-    let t = RANKS[0][1];
-    for (const [d, label] of RANKS) if (depth >= d) t = label;
-    return t;
-  }
-
-  function updateStats() {
-    const stats = store.get("huskrillion:stats", { played: 0, best: 0, streak: 0, lastDay: 0, recorded: {} });
-    if (stats.recorded?.[daily.dayNumber]) return;
-    const depth = totalPoints() * 10;
-    stats.played += 1;
-    stats.best = Math.max(stats.best, depth);
-    stats.streak = stats.lastDay === daily.dayNumber - 1 ? stats.streak + 1 : 1;
+  function recordStats() {
+    const stats = store.get("hk:stats", { played: 0, best: 0, streak: 0, lastDay: 0, history: {} });
+    stats.history = stats.history || {};
+    if (stats.history[daily.dayNumber] != null) return;
+    const depth = total() * 10;
+    stats.played = (stats.played || 0) + 1;
+    stats.best = Math.max(stats.best || 0, depth);
+    stats.streak = stats.lastDay === daily.dayNumber - 1 ? (stats.streak || 0) + 1 : 1;
     stats.lastDay = daily.dayNumber;
-    stats.recorded = { ...(stats.recorded || {}), [daily.dayNumber]: depth };
-    store.set("huskrillion:stats", stats);
+    stats.history[daily.dayNumber] = depth;
+    store.set("hk:stats", stats);
   }
 
   function shareText() {
-    const depth = totalPoints() * 10;
-    const grid = save.results.map((r) => (TIERS[r.tier] || TIERS.waitlisted).emoji).join("");
-    return `Huskrillion #${daily.dayNumber} 🐺🌊\n${fmt(depth)} m deep · ${rankFor(depth)}\n${grid}\n${location.origin}`;
+    const depth = total() * 10;
+    const sq = save.results.map((r) => (TIERS[r.tier] || TIERS.missed).emoji).join("");
+    return `HUSKRILLION #${daily.dayNumber} 🐺\n▼ ${fmt(depth)} M · ${rankFor(depth)}\n${sq}\n${location.host}`;
   }
 
-  function showResults() {
-    clearInterval(timerId);
-    const depth = totalPoints() * 10;
-    setDepth(depth, false);
-    updatePromptHud();
-    const stats = store.get("huskrillion:stats", { played: 1, best: depth, streak: 1 });
-    main.innerHTML = `
-      <div class="card">
-        <div class="eyebrow">DIVE #${daily.dayNumber} COMPLETE</div>
-        <div class="big-depth">${fmt(depth)} M</div>
-        <div class="rank-title">${esc(rankFor(depth))}</div>
-        <div class="hint">${totalPoints()} / 700 points</div>
-        <ul class="results-list">
-          ${save.results.map((r) => {
-            const t = TIERS[r.tier] || TIERS.waitlisted;
-            return `<li>
-              <span class="sw" style="background:${t.color}"></span>
-              <div><div class="q">${esc(r.text)}</div><div class="a">${r.answer ? esc(r.canonical || r.answer) : "<i>—</i>"}</div></div>
-              <div class="t">${esc(t.label)}<br/>+${r.points}</div>
-            </li>`;
-          }).join("")}
+  function showDone() {
+    phase = "done";
+    show("#done"); renderLog();
+    placeDiverX();
+    const depth = total() * 10;
+    setDiveDepth(depth);
+    const stats = store.get("hk:stats", { played: 1, best: depth, streak: 1, history: {} });
+    const hist = Object.values(stats.history || {});
+    const avg = hist.length ? hist.reduce((a, c) => a + c, 0) / hist.length : depth;
+    $("#done").innerHTML = `
+      <div class="panel results">
+        <div class="eyebrow">dive #${daily.dayNumber} · dive log</div>
+        <div class="big">▼ ${fmt(depth)} M</div>
+        <div class="rank">${esc(rankFor(depth))}</div>
+        <div class="tier-desc">${total()} / 700 points</div>
+        <div class="squares">${save.results.map((r) => (TIERS[r.tier] || TIERS.missed).emoji).join("")}</div>
+        <ul class="loglist">
+          ${save.results.map((r) => { const t = TIERS[r.tier] || TIERS.missed; return `<li><span class="sq" style="background:${t.color}"></span><div><div class="q">${esc(r.text)}</div><div class="a">${r.answer ? esc(r.canonical || r.answer) : "—"}</div></div><div class="t" style="color:${t.color}">${esc(t.label)}<br/><span style="color:#fff">+${r.points}</span></div></li>`; }).join("")}
         </ul>
-        <button class="btn block" id="shareBtn">Share your dive</button>
+        <div class="actions" style="justify-content:stretch"><button class="btn" style="flex:1" id="shareBtn">share dive</button></div>
         <div class="stats">
-          <div><b>${stats.played}</b><span>dives</span></div>
-          <div><b>${stats.streak}</b><span>streak</span></div>
-          <div><b>${fmt(stats.best)}</b><span>best (m)</span></div>
+          <div><b>${stats.played || 1}</b><span>dives</span></div>
+          <div><b>${stats.streak || 1}</b><span>streak</span></div>
+          <div><b>${fmt(stats.best || depth)}</b><span>best m</span></div>
+          <div><b>${fmt(avg)}</b><span>avg m</span></div>
         </div>
-        <div class="countdown">NEXT DIVE IN <span id="cd">--:--:--</span></div>
+        <div class="next">next dive in <b id="cd">--:--:--</b></div>
       </div>`;
     $("#shareBtn").onclick = async () => {
       const text = shareText();
       try {
         if (navigator.share && matchMedia("(pointer: coarse)").matches) { await navigator.share({ text }); return; }
         await navigator.clipboard.writeText(text);
-        toast("COPIED! GO FLEX IN THE GROUP CHAT");
-      } catch {
-        prompt("Copy your results:", text);
-      }
+        toast("COPIED · GO FLEX IN THE GROUP CHAT");
+      } catch { window.prompt("Copy your results:", text); }
     };
     const tick = () => {
       const el = $("#cd"); if (!el) return;
       const left = Math.max(0, resetAt - Date.now());
-      if (left <= 0) { location.reload(); return; }
+      if (left <= 0) return location.reload();
       const h = Math.floor(left / 3600000), m = Math.floor(left / 60000) % 60, s = Math.floor(left / 1000) % 60;
       el.textContent = [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
       setTimeout(tick, 1000);
@@ -538,34 +868,46 @@
     tick();
   }
 
-  // ---------- Help modal ----------
+  // ================= Help =================
   function openHelp() {
-    const bg = document.createElement("div");
-    bg.className = "modal-bg";
-    const order = ["tour_group", "technically_correct", "first_year", "coop_veteran", "fifth_year", "huskrillion", "waitlisted", "missed"];
-    bg.innerHTML = `
-      <div class="card" role="dialog" aria-label="How to play">
-        <button class="icon-btn close-x" aria-label="Close">X</button>
-        <div class="eyebrow">HOW TO PLAY</div>
-        <div class="prompt-text" style="font-size:26px">Name the answer nobody else will.</div>
-        <div class="hint" style="color:#333">
-          • 7 prompts a day, the same for every Husky.<br/>
-          • 25 seconds per prompt. One answer. No do-overs.<br/>
-          • Every prompt has lots of right answers. The more obscure (but still correct) your answer, the more points.<br/>
-          • Each point drops you 10 m into the Charles. A perfect dive is 7,000 m.<br/>
-          • An AI judge checks your answer and decides how rare it is. Spelling doesn't have to be perfect.
-        </div>
-        <ul class="tiers">
-          ${order.map((k) => `<li><span class="sw" style="background:${TIERS[k].color}"></span><span><b>${TIERS[k].label}</b> · ${TIERS[k].desc}</span><span class="tp">${TIERS[k].points}</span></li>`).join("")}
+    const m = $("#modal");
+    m.innerHTML = `
+      <div class="panel" role="dialog" aria-label="How to play">
+        <div class="row"><span class="eyebrow">how to play</span><button class="icon" id="closeHelp" aria-label="Close">×</button></div>
+        <div class="prompt" style="font-size:34px">name the answer nobody else will.</div>
+        <ul class="howto" style="box-shadow:none;background:none;padding:0">
+          <li>7 prompts a day, the same for every husky. resets at midnight boston time.</li>
+          <li>25 seconds per prompt. not accepted? keep trying until time runs out.</li>
+          <li>an ai judge checks your answer and decides how rare it is. typos are fine.</li>
+          <li>each prompt has one designated gem worth the full 100.</li>
+          <li>every point sinks you 10 m. a perfect dive hits the bottom of the charles at 7,000 m.</li>
         </ul>
-        <button class="btn block">Let's dive</button>
+        <ul class="tiers">${TIER_ORDER.map((k) => `<li><span class="sq" style="background:${TIERS[k].color}"></span><span>${TIERS[k].label} <em>· ${TIERS[k].desc}</em></span><span>${TIERS[k].points}</span></li>`).join("")}</ul>
       </div>`;
-    const close = () => { bg.remove(); const inp = $("#answer"); if (inp) inp.focus(); };
-    bg.addEventListener("click", (e) => { if (e.target === bg || e.target.closest("button")) close(); });
-    document.addEventListener("keydown", function onKey(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); } });
-    document.body.appendChild(bg);
+    m.hidden = false;
+    const close = () => { m.hidden = true; $("#ans")?.focus(); };
+    $("#closeHelp").onclick = close;
+    m.onclick = (e) => { if (e.target === m) close(); };
   }
   $("#helpBtn").onclick = openHelp;
+  $("#howtoToggle").onclick = () => {
+    const h = $("#howto"); h.hidden = !h.hidden;
+    $("#howtoToggle").textContent = (h.hidden ? "▸" : "▾") + " how to play";
+    $("#howtoToggle").setAttribute("aria-expanded", String(!h.hidden));
+  };
+  $("#beginBtn").onclick = begin;
+
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("#modal").hidden) { $("#modal").hidden = true; return; }
+    if (e.key !== "Enter" || !$("#modal").hidden) return;
+    if (phase === "title") { e.preventDefault(); begin(); }
+    else if (phase === "reveal" && document.activeElement?.id !== "nextBtn") { e.preventDefault(); $("#nextBtn")?.click(); }
+    else if (phase === "resume" && document.activeElement?.id !== "resumeBtn") { e.preventDefault(); $("#resumeBtn")?.click(); }
+  });
+  addEventListener("resize", () => {
+    resize(); placeDiverX();
+    if (phase === "title" || phase === "loading") { diver.x = W / 2 + 4; cam.y = cam.target = -H * 0.58; }
+  });
 
   boot();
 })();
